@@ -1,15 +1,15 @@
 /*
-  Comparador de preços V6 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
+  Comparador de preços V7 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v6',
-    LEGACY_KEYS: ['sos_comparador_precos_v5','sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
+    STORAGE_KEY: 'sos_comparador_precos_v7',
+    LEGACY_KEYS: ['sos_comparador_precos_v6','sos_comparador_precos_v5','sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 6,
+      version: 7,
       vehicle: '',
       requestText: '',
       requested: [],
@@ -65,7 +65,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:6,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:7,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -83,7 +83,8 @@
         }
         if(!raw) return;
         const parsed=JSON.parse(raw);
-        this.state=Object.assign(this.defaultState(),parsed||{}, {version:6});
+        this._loadedVersion=this.num(parsed?.version)||0;
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:7});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
         this.state.suppliers.forEach(s=>{
@@ -179,6 +180,84 @@
       });
       return result;
     },
+    hasAxle(value,axle){
+      const p=this.plain(value);
+      return axle==='DIANTEIRO'?/\bDIANTEIR[OA]S?\b/.test(p):/\bTRASEIR[OA]S?\b/.test(p);
+    },
+    isGenericKit(value){
+      const p=this.plain(value);
+      if(!/\bKITS?\b/.test(p))return false;
+      return !/\b(EMBREAGEM|DISTRIBUICAO|CORREIA|HOMOCINETIC[AO]?|ROLAMENTO|REPARO|FREIO|ESTABILIZADOR|BARRA|JUNTA|MOTOR)\b/.test(p);
+    },
+    contextualizeKits(items){
+      const list=(items||[]).map(item=>({...item}));
+      list.forEach((item,index)=>{
+        if(!this.isGenericKit(item.description))return;
+        const p=this.plain(item.description);
+        let axle=this.hasAxle(p,'DIANTEIRO')?'DIANTEIRO':this.hasAxle(p,'TRASEIRO')?'TRASEIRO':'';
+        const neighborIndexes=[index-1,index+1,index-2,index+2].filter(i=>i>=0&&i<list.length);
+        if(!axle){
+          for(const i of neighborIndexes){
+            const n=this.plain(list[i]?.description||'');
+            if(!/AMORTECEDOR|BATENTE|COXIM/.test(n))continue;
+            if(this.hasAxle(n,'DIANTEIRO')){axle='DIANTEIRO';break;}
+            if(this.hasAxle(n,'TRASEIRO')){axle='TRASEIRO';break;}
+          }
+        }
+        if(!axle)return;
+        const original=String(item.description||'').trim();
+        const hasShock=/AMORTECEDOR/.test(p);
+        if(!hasShock){
+          const detail=/BATENTE/.test(p)?'KIT BATENTE AMORTECEDOR':/COXIM/.test(p)?'KIT COXIM AMORTECEDOR':'KIT AMORTECEDOR';
+          item.description=`${detail} ${axle}`;
+        }else if(!this.hasAxle(p,axle)) item.description=`${original} ${axle}`;
+        item.note=[item.note,`Aplicação ${axle.toLowerCase()} identificada pelo contexto da lista.`].filter(Boolean).join(' ');
+      });
+      return list;
+    },
+    semanticKey(value){
+      const p=this.normalizeMatch(value).replace(/\b(DE|DO|DA|DOS|DAS|PARA|COM|SEM|TIPO)\b/g,' ').replace(/\s+/g,' ').trim();
+      const c=this.concept(p);
+      const side=this.hasAxle(p,'DIANTEIRO')?'_DIANTEIRO':this.hasAxle(p,'TRASEIRO')?'_TRASEIRO':/\bINTERNA\b/.test(p)?'_INTERNA':/\bEXTERNA\b/.test(p)?'_EXTERNA':/\bINFERIOR\b/.test(p)?'_INFERIOR':/\bSUPERIOR\b/.test(p)?'_SUPERIOR':'';
+      if(c)return `${c}${side}`;
+      return p;
+    },
+    leadingQuantityInfo(line){
+      const re=/^\s*(\d+(?:[.,]\d+)?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)(?:[.)-])?\s+/i;
+      const m=String(line||'').match(re);
+      if(!m)return {qty:0,shown:false,start:-1,end:-1,text:''};
+      return {qty:this.wordsToNumber(m[1]),shown:true,start:m.index||0,end:(m.index||0)+m[0].length,text:m[0]};
+    },
+    priceToken(line,leadingInfo={}){
+      const raw=String(line||'');
+      const partialRanges=[];
+      for(const m of raw.matchAll(/s[oó]\s+tem\s+(\d+(?:[.,]\d+)?)/ig)){
+        const token=m[1],offset=m[0].lastIndexOf(token);
+        partialRanges.push([m.index+offset,m.index+offset+token.length]);
+      }
+      const candidates=[];
+      for(const m of raw.matchAll(/(?:R\$\s*)?(\d+(?:[.,]\d{1,2})?)/g)){
+        const start=m.index||0,end=start+m[0].length,token=m[1];
+        if(leadingInfo.shown&&start>=leadingInfo.start&&end<=leadingInfo.end)continue;
+        if(partialRanges.some(([a,b])=>start>=a&&end<=b))continue;
+        const value=this.num(token);
+        if(!value)continue;
+        const before=raw.slice(Math.max(0,start-8),start);
+        if(value>=1900&&value<=2099&&!/[,.]/.test(token)&&!m[0].includes('R$'))continue;
+        if(/(?:COD|C[ÓO]DIGO|REF|REFER[EÊ]NCIA)\s*[:#-]?\s*$/i.test(before)&&!/[,.]/.test(token)&&!m[0].includes('R$'))continue;
+        const explicit=m[0].includes('R$')||/[,.]\d{1,2}$/.test(token);
+        const bareAllowed=!explicit&&start>0&&/\D/.test(raw.slice(0,start));
+        if(!explicit&&!bareAllowed)continue;
+        candidates.push({match:m,start,end,value,explicit});
+      }
+      return candidates.length?candidates[candidates.length-1]:null;
+    },
+    isQuantityMistakenAsPrice(rawLine,value){
+      const lead=this.leadingQuantityInfo(rawLine);
+      if(!lead.shown||Math.abs(this.num(value)-this.num(lead.qty))>.0001)return false;
+      const token=this.priceToken(rawLine,lead);
+      return !token;
+    },
     parseRequestedText(text){
       const entries=this.splitEntries(text);
       let start=0,vehicle='';
@@ -191,16 +270,32 @@
         }
         vehicle=vehicleParts.join(' - ');
       }
-      const requested=[];
+      let preliminary=[];
       entries.slice(start).forEach(line=>{
         let current=String(line||'').replace(/^[\-–—•*]+\s*/,'').trim();
         if(!current)return;
-        const qty=this.wordsToNumber(current)||1;
-        current=current.replace(/^(?:\d+(?:[.,]\d+)?(?:\s*[xX])?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)(?:[.)-])?\s+/i,'').trim();
+        const lead=this.leadingQuantityInfo(current);
+        const qty=lead.shown&&lead.qty>0?lead.qty:1;
+        if(lead.shown)current=current.slice(lead.end).trim();
         if(!current)return;
-        requested.push({id:this.id('req'),order:requested.length,description:current,qty,unit:'PC'});
+        preliminary.push({id:this.id('req'),order:preliminary.length,description:current,qty,unit:'PC',explicitQty:lead.shown,note:''});
       });
-      return {vehicle,requested};
+      preliminary=this.contextualizeKits(preliminary);
+      const requested=[];
+      let duplicatesMerged=0;
+      preliminary.forEach(item=>{
+        const key=this.semanticKey(item.description);
+        const previous=requested.find(r=>this.semanticKey(r.description)===key);
+        if(previous&&!item.explicitQty){
+          duplicatesMerged++;
+          previous.note=[previous.note,`A repetição “${item.description}” sem nova quantidade foi unida a esta peça.`].filter(Boolean).join(' ');
+          return;
+        }
+        const clean={...item,id:item.id||this.id('req'),order:requested.length};
+        delete clean.explicitQty;
+        requested.push(clean);
+      });
+      return {vehicle,requested,duplicatesMerged};
     },
     buildDraftOffers(parsed,source){
       const rows=parsed?.rows||[];
@@ -213,26 +308,31 @@
       });
     },
     rebuildSupplierDraft(s){
-      const existing=[...(s.draftOffers||[]),...(s.offers||[])];
-      let parsed=null;
+      const existing=(Array.isArray(s.draftOffers)&&s.draftOffers.length)?s.draftOffers:(Array.isArray(s.offers)?s.offers:[]);
+      let parsed=null,source='text';
       if(String(s.responseText||'').trim()) parsed=this.parseOffersLocal(s.responseText);
       if(!parsed || !(parsed.rows||[]).length){
+        source=existing.some(o=>o.source==='image')?'image':'text';
         parsed={rows:existing.map((o,i)=>({...o,order:i,requestedId:''})),documentTotal:this.num(s.documentTotal),documentExtra:this.num(s.documentExtra)};
       }
       s.documentTotal=this.num(parsed.documentTotal);
       s.documentExtra=this.num(parsed.documentExtra);
-      s.draftOffers=this.buildDraftOffers(parsed,'text');
+      s.draftOffers=this.buildDraftOffers(parsed,source);
       s.offers=[];
       s.confirmed=false;
     },
     repairMalformedRequestOnLoad(){
-      if(this.state.requested.length!==1 || !String(this.state.requestText||'').trim())return;
+      if(!String(this.state.requestText||'').trim())return;
       const parsed=this.parseRequestedText(this.state.requestText);
-      if(parsed.requested.length<=1)return;
+      const oldVersion=this.num(this._loadedVersion)||0;
+      const malformed=this.state.requested.length===1&&parsed.requested.length>1;
+      if(oldVersion>=7&&!malformed)return;
+      if(!parsed.requested.length)return;
       this.state.requested=parsed.requested;
-      if(!this.state.vehicle && parsed.vehicle)this.state.vehicle=parsed.vehicle;
+      if(!this.state.vehicle&&parsed.vehicle)this.state.vehicle=parsed.vehicle;
       this.state.suppliers.forEach(s=>this.rebuildSupplierDraft(s));
-      this.startupNotice=`A lista antiga estava unificada. Ela foi separada automaticamente em ${parsed.requested.length} peças. Revise e salve novamente os preços dos fornecedores.`;
+      const merged=parsed.duplicatesMerged?` ${parsed.duplicatesMerged} repetição sem quantidade foi unida e não virou uma segunda peça.`:'';
+      this.startupNotice=`A cotação antiga foi corrigida: ${parsed.requested.length} peças independentes, kits dianteiro/traseiro identificados pelo contexto e números de quantidade impedidos de virar preço.${merged} Revise e salve novamente os fornecedores.`;
     },
     parseRequest(){
       const text=String(this.$('compareRequestText')?.value||'').trim();
@@ -246,7 +346,8 @@
       this.$('compareVehicle').value=this.state.vehicle||'';
       this.state.suppliers.forEach(s=>this.rebuildSupplierDraft(s));
       this.renderAll();
-      this.toast(`${requested.length} peça(s) separada(s) e carregada(s).`);
+      const merged=parsed.duplicatesMerged?` ${parsed.duplicatesMerged} repetição sem quantidade foi unida.`:'';
+      this.toast(`${requested.length} peça(s) independentes carregadas.${merged}`);
     },
     loadBudgetParts(){
       const app=this.app();
@@ -291,7 +392,7 @@
       box.innerHTML=this.state.requested.map((r,i)=>`<div class="compare-request-card">
         <div class="compare-request-number">${i+1}</div>
         <div class="compare-request-fields">
-          <div><label>Peça solicitada</label><input value="${this.attr(r.description)}" oninput="Comparator.updateRequested('${r.id}','description',this.value)"></div>
+          <div><label>Peça solicitada</label><input value="${this.attr(r.description)}" oninput="Comparator.updateRequested('${r.id}','description',this.value)">${r.note?`<small class="compare-request-note"><i class="fa-solid fa-circle-info"></i> ${this.esc(r.note)}</small>`:''}</div>
           <div><label>Quantidade</label><input inputmode="decimal" value="${this.attr(r.qty)}" oninput="Comparator.updateRequested('${r.id}','qty',this.value)"></div>
         </div>
         <button class="btn bad small compare-remove" onclick="Comparator.removeRequested('${r.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
@@ -340,44 +441,54 @@
     },
     splitLines(text){ return this.splitEntries(text); },
     parseOffersLocal(text){
-      const rows=[];
-      this.splitEntries(text).forEach((raw,index)=>{
-        let line=raw.replace(/^[\-–—•*]+\s*/,'').trim();
+      let rows=[];
+      const entries=this.splitEntries(text);
+      entries.forEach((raw,index)=>{
+        let line=String(raw||'').replace(/^[\-–—•*]+\s*/,'').trim();
         if(!line)return;
-        if(this.looksLikeVehicle(line) && !/R\$|CADA|REAIS?|PRE[CÇ]O|\d+[.,]\d{2}/i.test(line))return;
+        if(this.looksLikeVehicle(line)&&!this.looksLikePart(line))return;
+
         const availability=this.parseAvailability(line);
         const partial=line.match(/s[oó]\s+tem\s+(\d+(?:[.,]\d+)?)/i);
-        const qtyFound=this.wordsToNumber(line);
-        let qty=qtyFound||0;
-        if(partial)qty=this.num(partial[1]);
-        const sanitized=line.replace(/s[oó]\s+tem\s+\d+(?:[.,]\d+)?/ig,' ');
-        const nums=[...sanitized.matchAll(/(?:R\$\s*)?(\d+(?:[.,]\d{1,2})?)/g)];
-        let priceMatch=null;
-        for(let i=nums.length-1;i>=0;i--){
-          const value=this.num(nums[i][1]);
-          const full=nums[i][0];
-          const before=sanitized.slice(0,nums[i].index||0);
-          if(value>0 && !(/\b(?:19|20)$/.test(before.trim()) && value>=1900 && value<=2099)){priceMatch=nums[i];break;}
-          if(full.includes(',')||full.includes('.')){priceMatch=nums[i];break;}
-        }
-        const rawPrice=availability==='unavailable'?0:(priceMatch?this.num(priceMatch[1]):0);
-        if(!rawPrice && availability==='available') return;
+        const lead=this.leadingQuantityInfo(line);
+        let qty=partial?this.num(partial[1]):(lead.shown?lead.qty:0);
+        const token=availability==='unavailable'?null:this.priceToken(line,lead);
+        const rawPrice=availability==='unavailable'?0:(token?token.value:0);
+
+        // Linha como “1 retentor do mancal” contém apenas quantidade, não preço.
+        if(!rawPrice&&availability==='available')return;
+
         const each=/\b(cada|unit[aá]rio|por\s+unidade|por\s+pe[cç]a)\b/i.test(line);
-        const totalWord=/\b(total|conjunto|par\s+por)\b/i.test(line);
+        const totalWord=/\b(total|conjunto|par\s+por|valor\s+do\s+par)\b/i.test(line);
         let priceType='unit';
-        if(availability==='unavailable') priceType='unavailable';
-        else if(qty>1 && !each && !totalWord) priceType='unknown';
-        else if(totalWord && qty>1) priceType='total';
+        if(availability==='unavailable')priceType='unavailable';
+        else if(qty>1&&!each&&!totalWord)priceType='unknown';
+        else if(totalWord&&qty>1)priceType='total';
+
         const brand=this.extractBrand(line);
         let description=line;
-        if(priceMatch) description=description.slice(0,priceMatch.index)+description.slice((priceMatch.index||0)+priceMatch[0].length);
+        if(lead.shown)description=description.slice(lead.end);
+        if(token){
+          const adjustedStart=Math.max(0,token.start-(lead.shown?lead.end:0));
+          const adjustedEnd=Math.max(adjustedStart,token.end-(lead.shown?lead.end:0));
+          description=description.slice(0,adjustedStart)+description.slice(adjustedEnd);
+        }
         description=description
-          .replace(/^(?:\d+(?:[.,]\d+)?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)\s+/i,'')
-          .replace(/\b(cada|unit[aá]rio|por\s+unidade|por\s+pe[cç]a|reais?|s[oó]\s+tem\s+\d+|n[aã]o\s+vai|n[aã]o\s+tem)\b/ig,' ');
-        if(brand)description=description.replace(new RegExp('\\b'+brand.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','ig'),' ');
+          .replace(/s[oó]\s+tem\s+\d+(?:[.,]\d+)?/ig,' ')
+          .replace(/\b(cada|unit[aá]rio|por\s+unidade|por\s+pe[cç]a|reais?|n[aã]o\s+vai|n[aã]o\s+tem|sem\s+estoque|indispon[ií]vel|esgotado)\b/ig,' ');
+        if(brand){
+          description=description.split(/\s+/).filter(token=>this.plain(token)!==this.plain(brand)).join(' ');
+        }
         description=description.replace(/\s+/g,' ').trim()||'ITEM NÃO IDENTIFICADO';
-        rows.push(this.normalizeDraft({order:index,description,brand,code:'',qty,qtyShown:!!qtyFound||!!partial,priceType,value:rawPrice,extra:0,availability,rawLine:raw,note:partial?`Fornecedor informou somente ${qty} unidade(s).`:''}));
+
+        rows.push(this.normalizeDraft({
+          order:index,description,brand,code:'',qty,qtyShown:lead.shown||!!partial,
+          priceType,value:rawPrice,extra:0,availability,rawLine:raw,
+          note:partial?`Fornecedor informou somente ${qty} unidade(s).`:''
+        }));
       });
+
+      rows=this.contextualizeKits(rows).map((row,i)=>this.normalizeDraft({...row,order:i}));
       return {rows,documentTotal:0,documentExtra:0};
     },
 
@@ -459,8 +570,15 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       let availability=['available','partial','unavailable','unknown'].includes(raw?.availability)?raw.availability:(priceType==='unavailable'?'unavailable':'available');
       let value=this.num(raw?.value);
       const rawLine=String(raw?.rawLine||'').trim();
-      const note=String(raw?.note||'').trim();
+      let note=String(raw?.note||'').trim();
       const explicitUnavailable=this.parseAvailability(`${rawLine} ${note}`)==='unavailable';
+
+      // Quantidade não é preço: “1 retentor do mancal” não pode virar R$ 1,00.
+      if(value>0&&this.isQuantityMistakenAsPrice(rawLine,value)){
+        value=0;
+        if(priceType!=='unavailable')priceType='unknown';
+        note=[note,'A única numeração encontrada era a quantidade; nenhum preço foi considerado.'].filter(Boolean).join(' ');
+      }
 
       // Salvaguarda de verdade: preço positivo nunca pode virar “NÃO TEM” por inferência silenciosa.
       // Só mantemos indisponível quando a própria resposta contém expressão explícita de falta.
@@ -480,7 +598,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       };
     },
     normalizeParsed(parsed,source){
-      const rows=Array.isArray(parsed?.rows)?parsed.rows:[];
+      const rows=this.contextualizeKits(Array.isArray(parsed?.rows)?parsed.rows:[]);
       return {
         rows:rows.map((r,i)=>this.normalizeDraft({...r,order:i,source})).filter(r=>r.description||r.value||r.availability==='unavailable'),
         documentTotal:this.num(parsed?.documentTotal),documentExtra:this.num(parsed?.documentExtra)
@@ -586,12 +704,13 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(/COXIM/.test(p)&&/(CAMBIO|CAIXA|MOTOR|INFERIOR|SUPERIOR|TRASEIRO)/.test(p))return 'COXIM_CAMBIO';
       if(/BRACO OSCILANTE/.test(p))return 'BRACO';
       if(/BUCHA.*BANDEJA|BANDEJA.*BUCHA/.test(p))return 'BUCHA_BANDEJA';
+      if(/MORCEGUINHO|TERMINAL.*BARRA|LIGACAO.*BARRA|PIVO.*BARRA|BARRA.*PIVO/.test(p))return 'LIGACAO_BARRA';
       if(/PIVO/.test(p))return 'PIVO';
-      if(/TERMINAL.*BARRA|LIGACAO.*BARRA/.test(p))return 'LIGACAO_BARRA';
       if(/BUCHA.*BARRA|BARRA.*BUCHA/.test(p))return 'BUCHA_BARRA';
       if(/\bKIT\b/.test(p))return 'KIT';
       return '';
     },
+
     matchScore(request,offer){
       const a=this.normalizeMatch(request.description),b=this.normalizeMatch(offer.description);
       if(!a||!b)return 0;
@@ -608,6 +727,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(ca&&cb&&ca===cb)score+=1;
       if(ca==='COXIM_CAMBIO'&&cb==='COXIM_CAMBIO'&&((lowerA&&lowerB)||(upperA&&upperB)))score+=.75;
       if(ca==='KIT'&&cb==='KIT_AMORTECEDOR')score+=.35;
+      if((ca==='LIGACAO_BARRA'&&cb==='PIVO')||(ca==='PIVO'&&cb==='LIGACAO_BARRA'))score+=.72;
       return score;
     },
     suggestRequestedId(offer,offerIndex,totalOffers){
@@ -690,9 +810,9 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(o.availability==='unavailable'||o.priceType==='unavailable')return 0;
       const requestedQty=Math.max(.0001,this.num(request?.qty)||1);
       const lineQty=Math.max(.0001,this.num(o.qty)||requestedQty);
-      const base=o.priceType==='unit'?this.num(o.value)*requestedQty:this.num(o.value);
-      const extra=this.num(o.extra);
-      return base+extra;
+      const appliedQty=o.availability==='partial'?lineQty:requestedQty;
+      const base=o.priceType==='unit'?this.num(o.value)*appliedQty:this.num(o.value);
+      return base+this.num(o.extra);
     },
     rowCheck(o){
       const issues=[];
@@ -854,11 +974,14 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       const quotedQty=this.num(o.qty)||reqQty;
       const unavailable=o.availability==='unavailable'||o.priceType==='unavailable';
       const partial=!unavailable&&o.availability==='partial';
+      const appliedQty=partial?quotedQty:reqQty;
       const denominator=Math.max(.0001,quotedQty);
-      const baseUnit=o.priceType==='unit'?this.num(o.value):(this.num(o.value)/denominator);
-      const extraUnit=this.num(o.extra)/Math.max(.0001,reqQty);
-      const unitCost=baseUnit+extraUnit;
-      return {supplierId:s.id,supplierName:s.name,freight:this.num(s.freight),requestId:r.id,description:r.description,brand:o.brand,code:o.code,requiredQty:reqQty,offeredQty:partial?quotedQty:reqQty,unitCost,total:unitCost*reqQty,enough:!unavailable&&!partial,unavailable,partial,note:o.note,source:o};
+      const quotedUnit=o.priceType==='unit'?this.num(o.value):(this.num(o.value)/denominator);
+      const baseTotal=quotedUnit*Math.max(.0001,appliedQty);
+      const extraTotal=this.num(o.extra);
+      const total=unavailable?0:baseTotal+extraTotal;
+      const unitCost=unavailable?0:total/Math.max(.0001,appliedQty);
+      return {supplierId:s.id,supplierName:s.name,freight:this.num(s.freight),requestId:r.id,description:r.description,brand:o.brand,code:o.code,requiredQty:reqQty,offeredQty:appliedQty,quotedUnit,baseTotal,extraTotal,unitCost,total,enough:!unavailable&&!partial,unavailable,partial,note:o.note,source:o};
     },
     computeResult(){
       const confirmed=this.state.suppliers.filter(s=>s.confirmed);
@@ -905,8 +1028,9 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       return `<div class="${classes.join(' ')}">
         <div class="compare-option-top"><b>${this.esc(offer.brand||'SEM MARCA INFORMADA')}</b>${isWinner?'<span class="compare-best-badge"><i class="fa-solid fa-trophy"></i> MAIS BARATO</span>':''}</div>
         ${offer.code?`<small>Cód. ${this.esc(offer.code)}</small>`:''}
-        <div class="compare-option-prices"><span>${this.money(offer.unitCost)} <small>cada</small></span><strong>${this.money(offer.total)} <small>total</small></strong></div>
-        ${stock?`<div class="compare-stock-warning">${stock}</div>`:''}
+        <div class="compare-option-prices"><span>${this.money(offer.quotedUnit)} <small>cada</small></span><strong>${this.money(offer.total)} <small>total final</small></strong></div>
+        ${offer.extraTotal>0?`<div class="compare-extra-line">+ ${this.money(offer.extraTotal)} de frete/ST nesta linha</div>`:''}
+        ${stock?`<div class="compare-stock-warning">${stock} · total calculado somente sobre o estoque informado</div>`:''}
         ${offer.note?`<small class="compare-option-note">${this.esc(offer.note)}</small>`:''}
       </div>`;
     },
@@ -950,7 +1074,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       const rows=result.items.map((item,index)=>`<div class="compare-matrix-row compare-matrix-body-row">
         <div class="compare-piece-cell"><span>${index+1}</span><section><b>${this.esc(item.request.description)}</b><small>Quantidade necessária: ${this.esc(item.request.qty)}</small></section></div>
         ${this.state.suppliers.map(s=>`<div class="compare-supplier-cell ${item.winner&&item.winner.supplierId===s.id?'has-best':''}">${this.supplierMatrixCellHTML(item,s)}</div>`).join('')}
-        <div class="compare-best-cell">${item.winner?`<i class="fa-solid fa-trophy"></i><b>${this.esc(item.winner.supplierName)}</b><span>${this.esc(item.winner.brand||'SEM MARCA')}</span><strong>${this.money(item.winner.total)}</strong><small>${this.money(item.winner.unitCost)} cada</small>`:'<i class="fa-solid fa-triangle-exclamation"></i><b>SEM PREÇO</b><span>Aguardando cotação completa</span>'}</div>
+        <div class="compare-best-cell">${item.winner?`<i class="fa-solid fa-trophy"></i><b>${this.esc(item.winner.supplierName)}</b><span>${this.esc(item.winner.brand||'SEM MARCA')}</span><strong>${this.money(item.winner.total)}</strong><small>${this.money(item.winner.quotedUnit)} cada${item.winner.extraTotal>0?` + ${this.money(item.winner.extraTotal)} frete/ST`:''}</small>`:'<i class="fa-solid fa-triangle-exclamation"></i><b>SEM PREÇO</b><span>Aguardando cotação completa</span>'}</div>
       </div>`).join('');
       const desktop=`<div class="compare-matrix-wrap"><div class="compare-matrix">${header}${rows}</div></div>`;
       const mobile=`<div class="compare-mobile-list">${result.items.map((item,index)=>`<article class="compare-mobile-piece">
@@ -991,7 +1115,8 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
           const onlyUnavailable=offers.every(o=>o.unavailable);
           const text=offers.map(o=>{
             if(o.unavailable) return `${o.brand||'SEM MARCA'} — NÃO TEM`;
-            const parts=[o.brand||'SEM MARCA',`${this.money(o.unitCost)} cada`,`${this.money(o.total)} total`];
+            const parts=[o.brand||'SEM MARCA',`${this.money(o.quotedUnit)} cada`,`${this.money(o.total)} total final`];
+            if(o.extraTotal>0)parts.push(`Frete/ST da linha: ${this.money(o.extraTotal)}`);
             if(o.code)parts.push(`Cód. ${o.code}`);
             if(o.partial)parts.push(`PARCIAL: ${o.offeredQty} de ${o.requiredQty}`);
             if(item.winner&&o.supplierId===item.winner.supplierId&&o.source?.id===item.winner.source?.id)parts.push('MAIS BARATO');
@@ -1003,7 +1128,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
           else if(onlyUnavailable){styles.fillColor=lightRed;}
           row.push({content:text,styles});
         });
-        row.push(item.winner?{content:`${item.winner.supplierName}\n${item.winner.brand||'SEM MARCA'}\n${this.money(item.winner.total)} total\n${this.money(item.winner.unitCost)} cada`,styles:{fillColor:lightGreen,textColor:green,fontStyle:'bold',valign:'middle'}}:{content:'SEM PREÇO COMPLETO',styles:{fillColor:lightRed,textColor:[153,27,27],fontStyle:'bold',valign:'middle'}});
+        row.push(item.winner?{content:`${item.winner.supplierName}\n${item.winner.brand||'SEM MARCA'}\n${this.money(item.winner.total)} total final\n${this.money(item.winner.quotedUnit)} cada${item.winner.extraTotal>0?`\nFrete/ST: ${this.money(item.winner.extraTotal)}`:''}`,styles:{fillColor:lightGreen,textColor:green,fontStyle:'bold',valign:'middle'}}:{content:'SEM PREÇO COMPLETO',styles:{fillColor:lightRed,textColor:[153,27,27],fontStyle:'bold',valign:'middle'}});
         return row;
       });
       doc.autoTable({
@@ -1074,7 +1199,23 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     importJSON(input){
       const file=input?.files?.[0];if(!file)return;
       const reader=new FileReader();
-      reader.onload=()=>{try{const data=JSON.parse(reader.result);this.state=Object.assign(this.defaultState(),data);this.$('compareVehicle').value=this.state.vehicle||'';this.$('compareRequestText').value=this.state.requestText||'';this.renderAll();this.toast('Comparação importada.');}catch(e){this.toast('Arquivo inválido.');}input.value='';};
+      reader.onload=()=>{try{
+        const data=JSON.parse(reader.result);
+        this._loadedVersion=this.num(data?.version)||0;
+        this.state=Object.assign(this.defaultState(),data||{},{version:7});
+        if(!Array.isArray(this.state.requested))this.state.requested=[];
+        if(!Array.isArray(this.state.suppliers))this.state.suppliers=[];
+        this.state.suppliers.forEach(s=>{
+          s.draftOffers=Array.isArray(s.draftOffers)?s.draftOffers.map(o=>this.normalizeDraft(o)):[];
+          s.offers=Array.isArray(s.offers)?s.offers.map(o=>this.normalizeDraft(o)):[];
+          s.confirmed=!!s.confirmed;
+        });
+        this.repairMalformedRequestOnLoad();
+        this.$('compareVehicle').value=this.state.vehicle||'';
+        this.$('compareRequestText').value=this.state.requestText||'';
+        this.renderAll();
+        this.toast('Comparação importada e validada.');
+      }catch(e){this.toast('Arquivo inválido.');}input.value='';};
       reader.readAsText(file);
     },
     resetQuotation(){

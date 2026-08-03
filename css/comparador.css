@@ -1,4 +1,4 @@
-/* Comparador de preços V4 — matriz visual, parcial, responsiva e com PDF */
+/* Comparador de preços V7 — matriz visual, parcial, responsiva e com PDF */
 #secComparador,#secComparador *{box-sizing:border-box}
 #secComparador{max-width:100%;overflow-x:hidden}
 #secComparador input,#secComparador select,#secComparador textarea,#secComparador button{max-width:100%;min-width:0}
@@ -22,6 +22,8 @@
 .compare-request-number{width:28px;height:28px;border-radius:999px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:900;color:#374151;align-self:center}
 .compare-request-fields{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:8px;min-width:0}
 .compare-request-fields input{min-height:42px;padding:9px}
+.compare-request-note{display:block;margin-top:5px;font-size:10px;line-height:1.35;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 7px}
+.compare-request-note i{margin-right:4px}
 .compare-remove,.compare-icon-btn{width:42px;min-width:42px;height:42px;padding:0}
 .compare-supplier-card{border:1px solid var(--line);border-radius:16px;background:#fff;padding:13px;margin-bottom:12px;max-width:100%;overflow:hidden}
 .compare-supplier-card.confirmed{border:2px solid #86efac;background:#f0fdf4}
@@ -137,6 +139,7 @@
 .compare-option-prices strong{background:#111827;color:#fff;font-size:11px}
 .compare-matrix-option.best .compare-option-prices strong{background:#166534}
 .compare-option-prices small{font-size:7px;font-weight:600;opacity:.8}
+.compare-extra-line{margin-top:5px;border-radius:8px;padding:5px 6px;background:#fff7ed;color:#9a3412;font-size:8px;font-weight:800;text-align:center;overflow-wrap:anywhere}
 .compare-stock-warning{margin-top:6px;border-radius:8px;padding:5px;background:#fef3c7;color:#92400e;font-size:8px;font-weight:900;text-align:center}
 .compare-option-note{font-style:italic}
 .compare-cell-empty{height:100%;min-height:78px;border:1px dashed #cbd5e1;border-radius:11px;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;color:#64748b}
