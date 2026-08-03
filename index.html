@@ -7,7 +7,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=5.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=6.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -223,13 +223,13 @@
         <h3><span class="compare-step">1</span> Lista das peças</h3>
         <div class="compare-request-entry">
           <div><label>Veículo / aplicação</label><input id="compareVehicle" placeholder="Ex.: Uno 1.0 Way 2010 — quadrado"></div>
-          <div><label>Cole a lista completa, uma peça por linha</label><textarea id="compareRequestText" placeholder="Ex.:
+          <div><label>Cole a lista completa — uma peça por linha ou separadas por hífen</label><textarea id="compareRequestText" placeholder="Ex.:
 1 embreagem
 1 cabo de embreagem
 2 amortecedores dianteiros"></textarea></div>
         </div>
         <div class="compare-simple-actions compare-primary-actions">
-          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-list-check"></i> Carregar lista</button>
+          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-list-check"></i> Separar e carregar peças</button>
           <button class="btn line" onclick="Comparator.loadBudgetParts()"><i class="fa-solid fa-file-import"></i> Usar peças do orçamento</button>
         </div>
         <details class="compare-request-details"><summary>Conferir ou ajustar a lista</summary><div id="compareRequestedList"></div><button class="btn line block" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Adicionar peça manualmente</button></details>
@@ -345,6 +345,6 @@
     };
     window.addEventListener('DOMContentLoaded',()=>App.init());
   </script>
-  <script src="js/comparador.js?v=5.0.0"></script>
+  <script src="js/comparador.js?v=6.0.0"></script>
 </body>
 </html>

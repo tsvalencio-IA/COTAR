@@ -1,15 +1,15 @@
 /*
-  Comparador de preços V5 — matriz visual com 3 fornecedores, comparação parcial, PDF e reinício seguro.
+  Comparador de preços V6 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v5',
-    LEGACY_KEYS: ['sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
+    STORAGE_KEY: 'sos_comparador_precos_v6',
+    LEGACY_KEYS: ['sos_comparador_precos_v5','sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 5,
+      version: 6,
       vehicle: '',
       requestText: '',
       requested: [],
@@ -18,6 +18,7 @@
     busySuppliers: new Set(),
     imagePreviews: {},
     lastComparisonPdfBlob: null,
+    startupNotice: '',
 
     app(){
       try { return (typeof App !== 'undefined') ? App : null; }
@@ -64,7 +65,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:5,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:6,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -82,7 +83,7 @@
         }
         if(!raw) return;
         const parsed=JSON.parse(raw);
-        this.state=Object.assign(this.defaultState(),parsed||{}, {version:5});
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:6});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
         this.state.suppliers.forEach(s=>{
@@ -92,6 +93,7 @@
           s.draftOffers=s.draftOffers.map(o=>this.normalizeDraft(o));
           s.offers=s.offers.map(o=>this.normalizeDraft(o));
         });
+        this.repairMalformedRequestOnLoad();
       }catch(e){
         console.warn('Falha ao carregar comparação',e);
         this.state=this.defaultState();
@@ -106,6 +108,11 @@
       this.$('compareVehicle').addEventListener('input',()=>{this.state.vehicle=this.$('compareVehicle').value;this.save();});
       this.$('compareRequestText').addEventListener('input',()=>{this.state.requestText=this.$('compareRequestText').value;this.save();});
       this.renderAll();
+      if(this.startupNotice){
+        const notice=this.startupNotice;
+        this.startupNotice='';
+        setTimeout(()=>this.toast(notice),80);
+      }
     },
     renderAll(){
       this.ensureThreeSuppliers();
@@ -140,38 +147,106 @@
       const m=String(value||'').match(/^\s*(\d+(?:[.,]\d+)?)/);
       return m?this.num(m[1]):0;
     },
+    beginsQuantity(value){
+      return /^(?:\d+(?:[.,]\d+)?(?:\s*[xX])?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)\b/i.test(String(value||'').trim());
+    },
     looksLikeVehicle(line){
-      return /\b(?:19|20)\d{2}\b/.test(line) || /\b(UNO|GOL|PALIO|CORSA|FIAT|VOLKSWAGEN|VW|FORD|CHEVROLET|RENAULT|HONDA|TOYOTA|WAY)\b/i.test(line);
+      return /\b(?:19|20)\d{2}\b/.test(line) || /\b(UNO|GOL|PALIO|CORSA|FIAT|VOLKSWAGEN|VW|FORD|CHEVROLET|RENAULT|HONDA|TOYOTA|WAY|FIORINO|SAVEIRO|STRADA|SIENA|VERSAILLES)\b/i.test(line);
+    },
+    looksLikePart(line){
+      const p=this.plain(line);
+      return /\b(EMBREAGEM|CABO|AMORTECEDOR|KIT|PIVO|BRACO|BUCHA|RETENTOR|COIFA|COXIM|PASTILHA|DISCO|TERMINAL|BIELETA|ROLAMENTO|CORREIA|FILTRO|BOMBA|JUNTA|VELA|PNEU|PNEUZINHO|MANGUEIRA|CILINDRO|HOMOCINETICA|BANDEJA|BARRA|BATENTE|TENSOR|POLIA|CUBO|MOLA|SAPATA|LONA|SENSOR|RADIADOR|ALTERNADOR|MOTOR DE PARTIDA)\b/.test(p);
+    },
+    isContinuationFragment(value){
+      const raw=String(value||'').trim();
+      const p=this.plain(raw);
+      if(!p)return false;
+      if(/^\(.+\)$/.test(raw))return true;
+      if(/^(INFERIOR|SUPERIOR|DIANTEIRO|DIANTEIRA|TRASEIRO|TRASEIRA|INTERNO|INTERNA|EXTERNO|EXTERNA|ESQUERDO|ESQUERDA|DIREITO|DIREITA|COMPLETO|COMPLETA|LADO ESQUERDO|LADO DIREITO|TIPO .+|COM .+|SEM .+)$/.test(p))return true;
+      return false;
+    },
+    splitEntries(text){
+      const source=String(text||'').replace(/\r\n?/g,'\n').replace(/\t+/g,' ');
+      const result=[];
+      source.split(/\n+|;+/).forEach(block=>{
+        const line=String(block||'').trim();
+        if(!line)return;
+        const fragments=line.split(/\s+(?:-|–|—|•|\*)\s+/).map(x=>this.clean(x)).filter(Boolean);
+        fragments.forEach(fragment=>{
+          if(this.isContinuationFragment(fragment)&&result.length) result[result.length-1]+=` - ${fragment}`;
+          else result.push(fragment);
+        });
+      });
+      return result;
+    },
+    parseRequestedText(text){
+      const entries=this.splitEntries(text);
+      let start=0,vehicle='';
+      if(entries.length && this.looksLikeVehicle(entries[0]) && !this.looksLikePart(entries[0])){
+        const vehicleParts=[entries[0]];
+        start=1;
+        while(start<entries.length && !this.looksLikePart(entries[start]) && !this.beginsQuantity(entries[start])){
+          vehicleParts.push(entries[start]);
+          start++;
+        }
+        vehicle=vehicleParts.join(' - ');
+      }
+      const requested=[];
+      entries.slice(start).forEach(line=>{
+        let current=String(line||'').replace(/^[\-–—•*]+\s*/,'').trim();
+        if(!current)return;
+        const qty=this.wordsToNumber(current)||1;
+        current=current.replace(/^(?:\d+(?:[.,]\d+)?(?:\s*[xX])?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)(?:[.)-])?\s+/i,'').trim();
+        if(!current)return;
+        requested.push({id:this.id('req'),order:requested.length,description:current,qty,unit:'PC'});
+      });
+      return {vehicle,requested};
+    },
+    buildDraftOffers(parsed,source){
+      const rows=parsed?.rows||[];
+      return rows.map((o,i)=>{
+        const row=this.normalizeDraft({...o,source,order:i});
+        row.requestedId=this.suggestRequestedId(row,i,rows.length);
+        const req=this.state.requested.find(r=>r.id===row.requestedId);
+        if(row.priceType==='unknown' && (!row.qtyShown || (req&&this.num(req.qty)<=1))) row.priceType='unit';
+        return row;
+      });
+    },
+    rebuildSupplierDraft(s){
+      const existing=[...(s.draftOffers||[]),...(s.offers||[])];
+      let parsed=null;
+      if(String(s.responseText||'').trim()) parsed=this.parseOffersLocal(s.responseText);
+      if(!parsed || !(parsed.rows||[]).length){
+        parsed={rows:existing.map((o,i)=>({...o,order:i,requestedId:''})),documentTotal:this.num(s.documentTotal),documentExtra:this.num(s.documentExtra)};
+      }
+      s.documentTotal=this.num(parsed.documentTotal);
+      s.documentExtra=this.num(parsed.documentExtra);
+      s.draftOffers=this.buildDraftOffers(parsed,'text');
+      s.offers=[];
+      s.confirmed=false;
+    },
+    repairMalformedRequestOnLoad(){
+      if(this.state.requested.length!==1 || !String(this.state.requestText||'').trim())return;
+      const parsed=this.parseRequestedText(this.state.requestText);
+      if(parsed.requested.length<=1)return;
+      this.state.requested=parsed.requested;
+      if(!this.state.vehicle && parsed.vehicle)this.state.vehicle=parsed.vehicle;
+      this.state.suppliers.forEach(s=>this.rebuildSupplierDraft(s));
+      this.startupNotice=`A lista antiga estava unificada. Ela foi separada automaticamente em ${parsed.requested.length} peças. Revise e salve novamente os preços dos fornecedores.`;
     },
     parseRequest(){
       const text=String(this.$('compareRequestText')?.value||'').trim();
       if(!text){ this.toast('Cole a lista de peças antes de continuar.'); return; }
       this.state.requestText=text;
-      const rawLines=text.split(/\r?\n|;/).map(x=>this.clean(x)).filter(Boolean);
-      const requested=[];
-      rawLines.forEach((line,index)=>{
-        let current=line.replace(/^[\-–—•*]+\s*/,'').trim();
-        if(!current) return;
-        const beginsQty=/^(?:\d+(?:[.,]\d+)?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)\b/i.test(current);
-        if(index===0 && !beginsQty && this.looksLikeVehicle(current)){
-          if(!this.state.vehicle) this.state.vehicle=current;
-          return;
-        }
-        const qty=this.wordsToNumber(current)||1;
-        current=current.replace(/^(?:\d+(?:[.,]\d+)?|UM|UMA|DOIS|DUAS|PAR|TRES|TRÊS|QUATRO|CINCO|SEIS|SETE|OITO|NOVE|DEZ)\s+/i,'').trim();
-        if(!current) return;
-        requested.push({id:this.id('req'),order:requested.length,description:current,qty,unit:'PC'});
-      });
+      const parsed=this.parseRequestedText(text);
+      const requested=parsed.requested;
       if(!requested.length){ this.toast('Nenhuma peça foi identificada na lista.'); return; }
       this.state.requested=requested;
+      if(parsed.vehicle && !String(this.state.vehicle||'').trim())this.state.vehicle=parsed.vehicle;
       this.$('compareVehicle').value=this.state.vehicle||'';
-      this.state.suppliers.forEach(s=>{
-        s.confirmed=false;
-        s.offers=[];
-        (s.draftOffers||[]).forEach((o,i)=>o.requestedId=this.suggestRequestedId(o,i,s.draftOffers.length));
-      });
+      this.state.suppliers.forEach(s=>this.rebuildSupplierDraft(s));
       this.renderAll();
-      this.toast(`${requested.length} item(ns) carregado(s).`);
+      this.toast(`${requested.length} peça(s) separada(s) e carregada(s).`);
     },
     loadBudgetParts(){
       const app=this.app();
@@ -263,10 +338,10 @@
       if(/SO TEM|SOMENTE \d+|PARCIAL/.test(p))return 'partial';
       return 'available';
     },
-    splitLines(text){ return String(text||'').split(/\r?\n|;/).map(x=>this.clean(x)).filter(Boolean); },
+    splitLines(text){ return this.splitEntries(text); },
     parseOffersLocal(text){
       const rows=[];
-      this.splitLines(text).forEach((raw,index)=>{
+      this.splitEntries(text).forEach((raw,index)=>{
         let line=raw.replace(/^[\-–—•*]+\s*/,'').trim();
         if(!line)return;
         if(this.looksLikeVehicle(line) && !/R\$|CADA|REAIS?|PRE[CÇ]O|\d+[.,]\d{2}/i.test(line))return;
@@ -466,14 +541,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     applyDraft(s,parsed,source){
       s.documentTotal=this.num(parsed?.documentTotal);
       s.documentExtra=this.num(parsed?.documentExtra);
-      const rows=parsed?.rows||[];
-      s.draftOffers=rows.map((o,i)=>{
-        const row=this.normalizeDraft({...o,source,order:i});
-        row.requestedId=this.suggestRequestedId(row,i,rows.length);
-        const req=this.state.requested.find(r=>r.id===row.requestedId);
-        if(row.priceType==='unknown' && (!row.qtyShown || (req&&this.num(req.qty)<=1))) row.priceType='unit';
-        return row;
-      });
+      s.draftOffers=this.buildDraftOffers(parsed,source);
       s.confirmed=false;s.offers=[];
       this.renderAll();
       if(s.draftOffers.length) this.toast(`${s.draftOffers.length} preço(s) encontrado(s). Confira somente o que o fornecedor respondeu.`);

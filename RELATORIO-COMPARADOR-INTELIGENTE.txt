@@ -1,26 +1,65 @@
-RELATÓRIO — COMPARADOR DE PREÇOS V5
+RELATÓRIO — COMPARADOR DE PREÇOS V6
+Data: 03/08/2026
 
-CORREÇÕES DESTA VERSÃO
-1. Adicionado botão visível “ZERAR COTAÇÃO” no topo do comparador.
-2. O zeramento apaga somente lista, fornecedores, preços e comparação; o orçamento principal é preservado.
-3. Corrigida a leitura de “Coxim inferior Authomix 98,41”.
-4. AUTHOMIX/AUTOMIX/AUTMIX foram reconhecidas como marca.
-5. O pareamento diferencia COXIM INFERIOR de COXIM SUPERIOR e bloqueia associação cruzada.
-6. Preço positivo não pode mais ser salvo silenciosamente como “NÃO TEM”.
-7. Ao digitar um preço em uma linha marcada como indisponível, a situação volta para “TEM / COTOU”.
-8. Uma linha só permanece “NÃO TEM” quando a resposta contém expressão explícita como “não tem”, “sem estoque” ou “esgotado”, ou quando o usuário seleciona isso manualmente.
-9. O PDF e a tabela continuam diferenciando “NÃO RESPONDEU” de “NÃO TEM”.
-10. A legenda agora informa claramente que “NÃO TEM” é uma informação declarada, não uma conclusão automática.
+PROBLEMA COMPROVADO
+A lista colada com peças separadas por " - " era dividida apenas por quebra de linha ou ponto e vírgula.
+Por isso, a lista inteira virou um único item. Como consequência, todos os preços dos fornecedores ficaram associados à mesma descrição gigante e o PDF mostrou 1 de 1 item.
+
+CORREÇÃO REALIZADA
+1. A lista solicitada agora é separada automaticamente por:
+   - quebra de linha;
+   - ponto e vírgula;
+   - hífen, travessão ou marcador com espaços ao redor.
+
+2. A resposta de cada fornecedor usa a mesma separação. Portanto, mensagens recebidas em uma única linha, como:
+   "embreagem 297,70 LUK - cabo de embreagem 40,50 - 2 amortecedores..."
+   passam a gerar uma oferta independente para cada peça.
+
+3. Quantidades no início de cada item continuam preservadas.
+   Exemplo: "8 buchas bandeja traseiras" vira quantidade 8 e descrição "buchas bandeja traseiras".
+
+4. Fragmentos que são continuação da peça não são separados indevidamente.
+   Exemplo: "coxim traseiro - inferior" permanece como uma única peça.
+
+5. Veículo e peças podem ser colados juntos.
+   Exemplo: "Uno 1.0 Way 2010 - Quadrado - embreagem - cabo..."
+   O sistema separa "Uno 1.0 Way 2010 - Quadrado" como veículo e as demais entradas como peças.
+
+6. Migração da cotação V5:
+   - ao abrir a V6, se houver uma lista antiga unificada em um único item, ela é separada automaticamente;
+   - nomes e textos dos fornecedores são preservados;
+   - respostas são reprocessadas;
+   - preços antigos deixam de ser considerados confirmados e precisam ser conferidos novamente, porque a associação anterior estava incorreta.
+
+7. O botão agora informa claramente: "Separar e carregar peças".
+
+TESTES EXECUTADOS
+- Sintaxe completa do JavaScript: aprovada pelo node --check.
+- Lista exata do Uno enviada pelo usuário: 14 peças independentes.
+- Quantidades verificadas: 2 amortecedores, 4 pneuzinhos, 8 buchas e demais itens.
+- Veículo colado junto da lista: veículo separado e 14 peças preservadas.
+- Primeira resposta de fornecedor em uma única linha com hífens: 13 linhas úteis extraídas; o último retentor sem preço foi corretamente ignorado.
+- Segunda resposta com LUK, Valeo, Fania, Cofap, Axios, Viemar, Nakata, Corteco, Sabó e Spicer: 14 ofertas independentes.
+- Estoque parcial "só tem 4": preservado como parcial.
+- "2 kits não vai": preservado como indisponível.
+- "Coxim inferior Authomix 98,41": preço, marca e disponibilidade preservados.
+- Migração V5 com resposta textual: lista separada e ofertas remapeadas.
+- Migração V5 sem texto, usando ofertas salvas: oferta remapeada pela descrição original.
+- HTML: nenhum ID duplicado.
+- Referências de cache atualizadas para V6.
 
 ARQUIVOS FUNCIONAIS ALTERADOS
 - index.html
-- css/comparador.css
 - js/comparador.js
 
-NÃO ALTERADOS
+ARQUIVOS NÃO ALTERADOS FUNCIONALMENTE
+- css/comparador.css
 - js/api.js
 - config.js
 - teste.html
 - versailles.html
 - GUIA.HTML
-- rotinas originais de áudio, orçamento, serviços, dados e PDF do orçamento.
+- README.md
+
+OBSERVAÇÃO DE VERDADE
+Nenhuma chamada real ao OCR/Groq foi executada. Esta correção é do separador da lista, do separador das respostas textuais, da migração do estado anterior e da associação local das ofertas. A leitura de fotografia continua dependendo do serviço externo e da conferência humana antes de salvar.
