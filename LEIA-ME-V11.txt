@@ -1,0 +1,8 @@
+Substitua somente estes dois arquivos na raiz do repositório:
+- index.html
+- sw.js
+
+Depois do deploy do GitHub Pages:
+1. Pressione Ctrl + F5 no computador.
+2. Feche completamente o aplicativo instalado.
+3. Abra-o novamente para carregar o cache V11.

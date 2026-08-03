@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SOS Orça IA">
   <meta name="application-name" content="SOS Orçamentos IA">
-  <link rel="manifest" href="manifest.webmanifest?v=10.0.0">
+  <link rel="manifest" href="manifest.webmanifest?v=11.0.0">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=8.0.0">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png?v=8.0.0">
   <link rel="shortcut icon" href="icons/favicon.ico?v=8.0.0">
@@ -20,7 +20,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=10.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=11.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -193,7 +193,7 @@
 
 
 
-    /* V10 — lançamento manual realmente responsivo e sequencial */
+    /* V11 — lançamento manual sequencial com botão permanente abaixo da lista */
     .manual-items-section{padding:18px;overflow:visible}
     .manual-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e5e7eb}
     .manual-section-head h3{margin:0 0 5px}
@@ -223,7 +223,9 @@
     .manual-entry-actions-left,.manual-entry-actions-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .manual-entry-hint{font-size:12px;color:var(--muted);font-weight:700;line-height:1.35}
     .manual-next-button{min-width:190px;background:#15803d!important;color:#fff!important}
-    .manual-list-footer{padding:12px 0 2px;text-align:center}
+    .manual-list-footer{padding:14px 0 4px;text-align:center}
+    .manual-list-footer-always{display:flex;flex-direction:column;align-items:center;gap:7px;border-top:1px dashed #cbd5e1;margin-top:12px;padding-top:16px}
+    .manual-footer-note{font-size:11px;line-height:1.35;color:var(--muted);font-weight:700}
     .manual-list-footer .btn{width:min(420px,100%);min-height:52px;font-size:15px}
     .manual-empty{border:2px dashed #cbd5e1;border-radius:16px;padding:22px;text-align:center;background:#f8fafc}
     .manual-empty i{font-size:28px;color:#64748b;margin-bottom:9px}
@@ -453,7 +455,7 @@
         card.classList.toggle('is-complete',complete);card.classList.toggle('is-draft',!complete);
         const totalEl=card.querySelector('[data-manual-total]');if(totalEl)totalEl.textContent=this.money(total);
         const stateEl=card.querySelector('[data-manual-state]');if(stateEl)stateEl.textContent=complete?'Completo':'Em preenchimento';
-        const footer=this.$(type==='part'?'partAddFooter':'serviceAddFooter');if(footer)footer.classList.toggle('hidden',!(i===arr.length-1&&complete));
+        const footer=this.$(type==='part'?'partAddFooter':'serviceAddFooter');if(footer)footer.classList.remove('hidden');
         this.updateTotals();
       },
       setupManualEntryKeyboard(){
@@ -477,16 +479,14 @@
         const box=this.$('partsList');
         if(!this.state.parts.length){box.innerHTML=`<div class="manual-empty"><i class="fa-solid fa-box-open"></i><b>Nenhuma peça lançada</b><p>Toque no botão abaixo. O sistema abrirá a peça e posicionará o cursor diretamente na descrição.</p><button class="btn main" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Adicionar primeira peça</button></div>`;return;}
         const cards=this.state.parts.map((p,i)=>{const complete=this.partComplete(p);return `<div class="item-card manual-entry-card ${complete?'is-complete':'is-draft'}" data-entry-type="part" data-entry-index="${i}"><div class="item-head"><div class="manual-entry-title"><span class="manual-entry-number">${i+1}</span><div><b>Peça ${i+1}</b><div class="manual-entry-state" data-manual-state>${complete?'Completo':'Em preenchimento'}</div></div></div><span class="item-total" data-manual-total>${this.money(this.partTotal(p))}</span></div><div class="manual-form part-form"><div class="manual-field manual-field-code"><label>Código</label><input data-manual-next value="${this.esc(p.cod)}" placeholder="Opcional" oninput="App.updatePartField(${i},'cod',this.value)" onblur="App.normalizeManualField('part',${i},'cod',this)"></div><div class="manual-field manual-field-description"><label>Descrição da peça</label><textarea data-primary-field data-manual-next rows="3" placeholder="Ex.: KIT AMORTECEDOR DIANTEIRO" oninput="App.updatePartField(${i},'descricao',this.value)" onblur="App.normalizeManualField('part',${i},'descricao',this)">${this.esc(p.descricao)}</textarea></div><div class="manual-field manual-field-brand"><label>Marca</label><input data-manual-next value="${this.esc(p.fornecedor)}" placeholder="Ex.: AXIOS" oninput="App.updatePartField(${i},'fornecedor',this.value)" onblur="App.normalizeManualField('part',${i},'fornecedor',this)"></div><div class="manual-field manual-field-qty"><label>Quantidade</label><input data-manual-next value="${p.qtd}" inputmode="decimal" placeholder="1" oninput="App.updatePartField(${i},'qtd',this.value)"></div><div class="manual-field manual-field-value"><label>Valor unitário</label><input data-manual-next value="${p.valorUnit}" inputmode="decimal" placeholder="0,00" oninput="App.updatePartField(${i},'valorUnit',this.value)"></div><div class="manual-field manual-field-discount"><label>Desconto %</label><input data-manual-next value="${p.desc}" inputmode="decimal" placeholder="0" oninput="App.updatePartField(${i},'desc',this.value)"></div></div><div class="manual-entry-actions"><div class="manual-entry-actions-left"><button class="btn bad small" type="button" onclick="App.removePart(${i})"><i class="fa-solid fa-trash"></i> Excluir</button><span class="manual-mode-note"><i class="fa-solid fa-floppy-disk"></i> Salva automaticamente</span></div><div class="manual-entry-actions-right"><span class="manual-entry-hint">Preencha descrição, quantidade e valor.</span></div></div></div>`}).join('');
-        const ready=this.partComplete(this.state.parts[this.state.parts.length-1]);
-        box.innerHTML=cards+`<div id="partAddFooter" class="manual-list-footer ${ready?'':'hidden'}"><button class="btn ok" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Peça concluída — adicionar próxima peça</button></div>`;
+        box.innerHTML=cards+`<div id="partAddFooter" class="manual-list-footer manual-list-footer-always"><button class="btn ok manual-next-button" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Nova peça</button><div class="manual-footer-note">Este botão permanece sempre abaixo da última peça lançada.</div></div>`;
       },
       renderServices(){
         const box=this.$('servicesList');
         if(!this.state.services.length){box.innerHTML=`<div class="manual-empty"><i class="fa-solid fa-screwdriver-wrench"></i><b>Nenhum serviço lançado</b><p>Toque no botão abaixo. O cursor será levado diretamente para a descrição do serviço.</p><button class="btn main" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Adicionar primeiro serviço</button></div>`;return;}
         const sections=['SEM SELECAO / MANUAL','MECANICA','TAPECARIA / CAPOTARIA','FUNILARIA / PINTURA','LAVAGEM / HIGIENIZACAO','BORRACHARIA','INJECAO / ALIMENTACAO','ELETRICA','CAMBIO'];
         const cards=this.state.services.map((s,i)=>{const complete=this.serviceComplete(s);return `<div class="item-card manual-entry-card ${complete?'is-complete':'is-draft'}" data-entry-type="service" data-entry-index="${i}"><div class="item-head"><div class="manual-entry-title"><span class="manual-entry-number">${i+1}</span><div><b>Serviço ${i+1}</b><div class="manual-entry-state" data-manual-state>${complete?'Completo':'Em preenchimento'}</div></div></div><span class="item-total" data-manual-total>${this.money(this.serviceTotal(s))}</span></div><div class="manual-form service-form"><div class="manual-field manual-field-code"><label>Código</label><input data-manual-next value="${this.esc(s.cod)}" placeholder="Opcional" oninput="App.updateServiceField(${i},'cod',this.value)" onblur="App.normalizeManualField('service',${i},'cod',this)"></div><div class="manual-field manual-field-section"><label>Seção</label><select data-manual-next onchange="App.updateServiceField(${i},'secao',this.value)">${sections.map(x=>`<option ${s.secao===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="manual-field manual-field-description"><label>Descrição do serviço</label><textarea data-primary-field data-manual-next rows="3" placeholder="Ex.: SUBSTITUIÇÃO DO KIT DE EMBREAGEM" oninput="App.updateServiceField(${i},'descricao',this.value)" onblur="App.normalizeManualField('service',${i},'descricao',this)">${this.esc(s.descricao)}</textarea></div><div class="manual-field manual-field-system"><label>Sistema / tipo de veículo</label><textarea data-manual-next rows="3" oninput="App.updateServiceField(${i},'sistema',this.value)">${this.esc(s.sistema)}</textarea></div><div class="manual-field manual-field-tmo"><label>TMO / horas</label><input data-manual-next value="${s.tmo}" inputmode="decimal" placeholder="0" oninput="App.updateServiceField(${i},'tmo',this.value)"></div><div class="manual-field manual-field-hour"><label>Valor por hora</label><input data-manual-next value="${s.valorHora}" inputmode="decimal" placeholder="0,00" oninput="App.updateServiceField(${i},'valorHora',this.value)"></div><div class="manual-field manual-field-total"><label>Valor total</label><input data-manual-next value="${s.valorTotal||0}" inputmode="decimal" placeholder="0,00" oninput="App.updateServiceField(${i},'valorTotal',this.value)"></div><div class="manual-field manual-field-discount"><label>Desconto %</label><input data-manual-next value="${s.desc}" inputmode="decimal" placeholder="0" oninput="App.updateServiceField(${i},'desc',this.value)"></div></div><div class="manual-entry-actions"><div class="manual-entry-actions-left"><button class="btn bad small" type="button" onclick="App.removeService(${i})"><i class="fa-solid fa-trash"></i> Excluir</button><span class="manual-mode-note"><i class="fa-solid fa-calculator"></i> Total ou TMO × hora</span></div><div class="manual-entry-actions-right"><span class="manual-entry-hint">Preencha a descrição e o valor do serviço.</span></div></div></div>`}).join('');
-        const ready=this.serviceComplete(this.state.services[this.state.services.length-1]);
-        box.innerHTML=cards+`<div id="serviceAddFooter" class="manual-list-footer ${ready?'':'hidden'}"><button class="btn ok" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Serviço concluído — adicionar próximo serviço</button></div>`;
+        box.innerHTML=cards+`<div id="serviceAddFooter" class="manual-list-footer manual-list-footer-always"><button class="btn ok manual-next-button" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Novo serviço</button><div class="manual-footer-note">Este botão permanece sempre abaixo do último serviço lançado.</div></div>`;
       },
       renderAll(){this.renderParts();this.renderServices();this.updateTotals();this.renderPreview();}, totals(){const serv=this.state.services.reduce((a,s)=>a+this.serviceTotal(s),0), pec=this.state.parts.reduce((a,p)=>a+this.partTotal(p),0), hrs=this.state.services.reduce((a,s)=>a+this.num(s.tmo),0); return{serv,pec,hrs,total:serv+pec};},
       updateTotals(){const t=this.totals();this.$('totalServicos').textContent=this.money(t.serv);this.$('totalPecas').textContent=this.money(t.pec);this.$('totalHoras').textContent=t.hrs.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' h';this.$('totalGeral').textContent=this.money(t.total);},
@@ -535,6 +535,6 @@
   </div>
 
   <script src="js/pwa.js?v=8.0.0"></script>
-  <script src="js/comparador.js?v=10.0.0"></script>
+  <script src="js/comparador.js?v=11.0.0"></script>
 </body>
 </html>
