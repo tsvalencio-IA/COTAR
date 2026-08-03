@@ -1,78 +1,26 @@
-RELATÓRIO TÉCNICO — COMPARADOR DE PREÇOS V4
-Data: 03/08/2026
+RELATÓRIO — COMPARADOR DE PREÇOS V5
 
-1. OBJETIVO DESTA VERSÃO
+CORREÇÕES DESTA VERSÃO
+1. Adicionado botão visível “ZERAR COTAÇÃO” no topo do comparador.
+2. O zeramento apaga somente lista, fornecedores, preços e comparação; o orçamento principal é preservado.
+3. Corrigida a leitura de “Coxim inferior Authomix 98,41”.
+4. AUTHOMIX/AUTOMIX/AUTMIX foram reconhecidas como marca.
+5. O pareamento diferencia COXIM INFERIOR de COXIM SUPERIOR e bloqueia associação cruzada.
+6. Preço positivo não pode mais ser salvo silenciosamente como “NÃO TEM”.
+7. Ao digitar um preço em uma linha marcada como indisponível, a situação volta para “TEM / COTOU”.
+8. Uma linha só permanece “NÃO TEM” quando a resposta contém expressão explícita como “não tem”, “sem estoque” ou “esgotado”, ou quando o usuário seleciona isso manualmente.
+9. O PDF e a tabela continuam diferenciando “NÃO RESPONDEU” de “NÃO TEM”.
+10. A legenda agora informa claramente que “NÃO TEM” é uma informação declarada, não uma conclusão automática.
 
-Transformar a comparação em uma visão direta:
-- uma linha para cada peça solicitada;
-- três colunas fixas de fornecedores;
-- marca, código, preço unitário, total e disponibilidade dentro de cada coluna;
-- menor preço completo destacado em verde;
-- estoque parcial destacado em amarelo;
-- peça não respondida identificada sem bloquear o restante;
-- PDF da comparação com a mesma lógica.
-
-2. REGRA DE RESPOSTAS PARCIAIS
-
-Cada fornecedor pode responder uma única peça, algumas peças ou a lista inteira.
-Somente as linhas conferidas e salvas entram na tabela e no PDF.
-Uma peça não respondida aparece como “NÃO RESPONDEU”.
-Estoque parcial não é considerado vencedor para a quantidade completa.
-
-3. TABELA COMPARATIVA
-
-No computador, a tabela mostra:
-- peça e quantidade necessária;
-- Fornecedor 1;
-- Fornecedor 2;
-- Fornecedor 3;
-- melhor opção confirmada.
-
-No celular e tablet, a mesma informação passa automaticamente para cartões empilhados por peça, evitando uma tabela espremida.
-
-Quando um fornecedor informa mais de uma marca para a mesma peça, todas as alternativas são preservadas e exibidas.
-
-4. TOTAIS
-
-A tela mostra:
-- quantidade de peças da lista;
-- quantidade com algum preço completo;
-- quantidade ainda sem preço completo;
-- total da compra usando os menores preços confirmados;
-- cobertura e subtotal de cada fornecedor.
-
-Frete fixo é somado apenas uma vez por fornecedor utilizado no total combinado. Ele não é rateado artificialmente dentro do destaque individual de cada peça.
-
-5. PDF
-
-Foi acrescentado PDF em formato A4 paisagem com:
-- veículo/aplicação;
-- data e hora de geração;
-- três fornecedores lado a lado;
-- marca, preço unitário, total, código e disponibilidade;
-- destaque do menor preço completo;
-- resumo da compra pelos menores preços;
-- rodapé “Powered by thIAguinho Soluções Digitais”.
-
-Também existe opção de compartilhar o PDF quando o navegador aceita compartilhamento de arquivos. Caso contrário, o PDF é baixado para ser anexado manualmente.
-
-6. VALIDAÇÕES EXECUTADAS
-
-- sintaxe do JavaScript aprovada com node --check;
-- CSS analisado sem erros de sintaxe e com chaves balanceadas;
-- HTML sem IDs duplicados;
-- teste lógico automatizado com três fornecedores, marcas alternativas, peça não respondida e estoque parcial;
-- teste confirmou que estoque parcial não vence uma cotação completa;
-- teste confirmou a preservação de alternativas LUK e VALEO para a mesma peça;
-- estrutura do gerador de PDF validada com cinco colunas e múltiplas linhas;
-- prévia estática da matriz gerada para inspeção visual.
-
-Não foi realizada chamada real à API Groq nem teste de OCR online com a chave do projeto.
-
-7. ARQUIVOS FUNCIONAIS ALTERADOS
-
+ARQUIVOS FUNCIONAIS ALTERADOS
 - index.html
-- js/comparador.js
 - css/comparador.css
+- js/comparador.js
 
-As rotinas principais de áudio, orçamento, serviços, dados e PDF do orçamento original não foram reescritas.
+NÃO ALTERADOS
+- js/api.js
+- config.js
+- teste.html
+- versailles.html
+- GUIA.HTML
+- rotinas originais de áudio, orçamento, serviços, dados e PDF do orçamento.

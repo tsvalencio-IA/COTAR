@@ -7,7 +7,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=4.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=5.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -212,7 +212,10 @@
     </section>
 
     <section id="secComparador" class="section">
-      <h2 class="section-title">Comparador de preços</h2>
+      <div class="compare-page-head">
+        <h2 class="section-title">Comparador de preços</h2>
+        <button class="btn bad compare-reset-button" onclick="Comparator.resetQuotation()"><i class="fa-solid fa-rotate-left"></i> ZERAR COTAÇÃO</button>
+      </div>
       <div id="compareInlineMessage" class="compare-inline-message"></div>
       <div class="compare-intro"><b>Comparação simples e direta</b> Cadastre a lista e cole a resposta de cada um dos 3 fornecedores. Cada fornecedor pode responder somente as peças que possui. Na comparação, cada peça aparece em uma linha, com marca, preço unitário, total e o menor preço destacado.</div>
 
@@ -234,13 +237,13 @@
 
       <div class="card compare-main-card">
         <div class="compare-section-head"><h3><span class="compare-step">2</span> Respostas dos 3 fornecedores</h3></div>
-        <p class="note compare-help-text">Cole somente o que cada fornecedor respondeu. Uma única peça pode ser salva normalmente; as demais continuam aguardando.</p>
+        <p class="note compare-help-text">Cole somente o que cada fornecedor respondeu. Uma única peça pode ser salva normalmente; as demais continuam aguardando. O sistema só marca <b>NÃO TEM</b> quando isso estiver escrito na resposta ou for escolhido por você.</p>
         <div id="compareSuppliers"></div>
       </div>
 
       <div class="card compare-main-card compare-results-card">
         <div class="compare-section-head"><h3><span class="compare-step">3</span> Tabela comparativa</h3><span id="compareSaveStatus" class="note">Salvo neste navegador</span></div>
-        <div class="compare-legend"><span class="legend-best"><i class="fa-solid fa-trophy"></i> Menor preço completo</span><span class="legend-partial">Estoque parcial</span><span class="legend-missing">Não respondeu</span></div>
+        <div class="compare-legend"><span class="legend-best"><i class="fa-solid fa-trophy"></i> Menor preço completo</span><span class="legend-partial">Estoque parcial</span><span class="legend-missing">Não respondeu</span><span class="legend-unavailable">Não tem — informado</span></div>
         <div id="compareResults"></div>
       </div>
     </section>
@@ -342,6 +345,6 @@
     };
     window.addEventListener('DOMContentLoaded',()=>App.init());
   </script>
-  <script src="js/comparador.js?v=4.0.0"></script>
+  <script src="js/comparador.js?v=5.0.0"></script>
 </body>
 </html>

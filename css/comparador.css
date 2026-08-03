@@ -91,6 +91,7 @@
 .legend-best{background:#dcfce7;color:#166534;border:1px solid #86efac}
 .legend-partial{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
 .legend-missing{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.legend-unavailable{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
 .compare-result-actions{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .compare-result-actions .btn{min-height:45px}
 .compare-result-actions .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -190,4 +191,13 @@
   .compare-option-top{display:grid}
   .compare-best-badge{width:max-content}
   .compare-option-prices{grid-template-columns:1fr}
+}
+
+
+.compare-page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.compare-page-head .section-title{margin:0}
+.compare-reset-button{flex:0 0 auto;white-space:nowrap}
+@media(max-width:600px){
+  .compare-page-head{align-items:stretch;flex-direction:column}
+  .compare-reset-button{width:100%}
 }

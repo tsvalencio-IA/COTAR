@@ -1,15 +1,15 @@
 /*
-  Comparador de preços V4 — matriz visual com 3 fornecedores, comparação parcial e PDF.
+  Comparador de preços V5 — matriz visual com 3 fornecedores, comparação parcial, PDF e reinício seguro.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v4',
-    LEGACY_KEYS: ['sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
+    STORAGE_KEY: 'sos_comparador_precos_v5',
+    LEGACY_KEYS: ['sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 4,
+      version: 5,
       vehicle: '',
       requestText: '',
       requested: [],
@@ -64,7 +64,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:4,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:5,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -82,7 +82,7 @@
         }
         if(!raw) return;
         const parsed=JSON.parse(raw);
-        this.state=Object.assign(this.defaultState(),parsed||{}, {version:4});
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:5});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
         this.state.suppliers.forEach(s=>{
@@ -252,7 +252,7 @@
       const t=this.$(`supplierBusyText_${id}`);if(t)t.textContent=text;
     },
 
-    knownBrands(){return ['LUK','VALEO','FANIA','MONROE','COFAP','AXIOS','NAKATA','SABO','SABÓ','SPICER','CORTECO','MOBENSANI','PERFECT','BROKITS','BROKIT','EFFARI','SKF','INA','TRW','VIEMAR'];},
+    knownBrands(){return ['LUK','VALEO','FANIA','MONROE','COFAP','AXIOS','NAKATA','SABO','SABÓ','SPICER','CORTECO','MOBENSANI','PERFECT','BROKITS','BROKIT','EFFARI','SKF','INA','TRW','VIEMAR','AUTHOMIX','AUTOMIX','AUTMIX'];},
     extractBrand(line){
       const p=this.plain(line);
       return this.knownBrands().find(b=>p.includes(this.plain(b)))||'';
@@ -317,11 +317,11 @@
     getTextModel(){return window.SOS_CONFIG?.GROQ_CHAT_MODEL||'openai/gpt-oss-20b';},
     getVisionModel(){return window.SOS_CONFIG?.GROQ_VISION_MODEL||'qwen/qwen3.6-27b';},
     extractionSchema(){
-      return {documentTotal:0,documentExtra:0,rows:[{description:'',brand:'',code:'',qty:0,qtyShown:false,priceType:'unit',value:0,extra:0,availability:'available',note:''}]};
+      return {documentTotal:0,documentExtra:0,rows:[{description:'',brand:'',code:'',qty:0,qtyShown:false,priceType:'unit',value:0,extra:0,availability:'available',note:'',rawLine:''}]};
     },
     extractionPrompt(kind,text=''){
       return `Leia somente os dados visíveis desta cotação automotiva. Responda em JSON válido no formato ${JSON.stringify(this.extractionSchema())}.
-Regras: não invente; uma linha por produto; preserve marca/código; qty é somente a quantidade que estiver escrita e deve ser 0 quando não aparecer; a ausência de quantidade não significa falta de estoque; qtyShown informa se a quantidade estava visível; priceType é unit, total, unknown ou unavailable; value é o preço conforme priceType; extra é frete/ST da linha; documentTotal é o total final exibido. Se não estiver legível, deixe zero/vazio e explique em note.${kind==='TEXT'?`\nTEXTO:\n${text}`:''}`;
+Regras: não invente; uma linha por produto; preserve marca/código; qty é somente a quantidade que estiver escrita e deve ser 0 quando não aparecer; a ausência de quantidade não significa falta de estoque; qtyShown informa se a quantidade estava visível; priceType é unit, total, unknown ou unavailable; value é o preço conforme priceType; extra é frete/ST da linha; documentTotal é o total final exibido; rawLine deve repetir literalmente a linha lida. Se não estiver legível, deixe zero/vazio e explique em note. Nunca marque unavailable quando houver preço positivo sem uma expressão explícita como 'não tem' ou 'sem estoque'.${kind==='TEXT'?`\nTEXTO:\n${text}`:''}`;
     },
     async groqText(prompt,key){
       const payload={
@@ -380,12 +380,28 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       });
     },
     normalizeDraft(raw){
-      const priceType=['unit','total','unknown','unavailable'].includes(raw?.priceType)?raw.priceType:(raw?.availability==='unavailable'?'unavailable':'unknown');
-      const availability=['available','partial','unavailable','unknown'].includes(raw?.availability)?raw.availability:(priceType==='unavailable'?'unavailable':'available');
+      let priceType=['unit','total','unknown','unavailable'].includes(raw?.priceType)?raw.priceType:(raw?.availability==='unavailable'?'unavailable':'unknown');
+      let availability=['available','partial','unavailable','unknown'].includes(raw?.availability)?raw.availability:(priceType==='unavailable'?'unavailable':'available');
+      let value=this.num(raw?.value);
+      const rawLine=String(raw?.rawLine||'').trim();
+      const note=String(raw?.note||'').trim();
+      const explicitUnavailable=this.parseAvailability(`${rawLine} ${note}`)==='unavailable';
+
+      // Salvaguarda de verdade: preço positivo nunca pode virar “NÃO TEM” por inferência silenciosa.
+      // Só mantemos indisponível quando a própria resposta contém expressão explícita de falta.
+      if(explicitUnavailable){
+        availability='unavailable';
+        priceType='unavailable';
+        value=0;
+      }else if(value>0 && (availability==='unavailable'||priceType==='unavailable')){
+        availability='available';
+        priceType=this.num(raw?.qty)>1?'unknown':'unit';
+      }
+
       return {
         id:raw?.id||this.id('off'),order:this.num(raw?.order),description:String(raw?.description||'').trim(),brand:String(raw?.brand||'').trim(),code:String(raw?.code||'').trim(),
-        qty:this.num(raw?.qty),qtyShown:!!raw?.qtyShown,priceType,value:this.num(raw?.value),extra:this.num(raw?.extra),availability,
-        note:String(raw?.note||'').trim(),rawLine:String(raw?.rawLine||'').trim(),requestedId:String(raw?.requestedId||''),ignored:!!raw?.ignored,source:raw?.source||''
+        qty:this.num(raw?.qty),qtyShown:!!raw?.qtyShown,priceType,value,extra:this.num(raw?.extra),availability,
+        note,rawLine,requestedId:String(raw?.requestedId||''),ignored:!!raw?.ignored,source:raw?.source||''
       };
     },
     normalizeParsed(parsed,source){
@@ -484,6 +500,10 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         [/\bEMBREAGENS\b/g,' EMBREAGEM ']
       ];
       rep.forEach(([r,v])=>p=p.replace(r,v));
+      this.knownBrands().forEach(brand=>{
+        const token=this.plain(brand).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        if(token)p=p.replace(new RegExp(`\\b${token}\\b`,'g'),' ');
+      });
       return p.replace(/\s+/g,' ').trim();
     },
     concept(value){
@@ -495,6 +515,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(/COIFA/.test(p)&&/(INTERNA|CAMBIO)/.test(p))return 'COIFA_INTERNA';
       if(/AMORTECEDOR/.test(p)&&/(KIT|BATENTE|COXIM)/.test(p))return 'KIT_AMORTECEDOR';
       if(/AMORTECEDOR/.test(p))return 'AMORTECEDOR';
+      if(/COXIM/.test(p)&&/(CAMBIO|CAIXA|MOTOR|INFERIOR|SUPERIOR|TRASEIRO)/.test(p))return 'COXIM_CAMBIO';
       if(/BRACO OSCILANTE/.test(p))return 'BRACO';
       if(/BUCHA.*BANDEJA|BANDEJA.*BUCHA/.test(p))return 'BUCHA_BANDEJA';
       if(/PIVO/.test(p))return 'PIVO';
@@ -508,7 +529,8 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(!a||!b)return 0;
       const frontA=/DIANTEIRO/.test(a),rearA=/TRASEIRO/.test(a),frontB=/DIANTEIRO/.test(b),rearB=/TRASEIRO/.test(b);
       const inA=/INTERNA/.test(a),outA=/EXTERNA/.test(a),inB=/INTERNA/.test(b),outB=/EXTERNA/.test(b);
-      if((frontA&&rearB)||(rearA&&frontB)||(inA&&outB)||(outA&&inB))return 0;
+      const lowerA=/INFERIOR/.test(a),upperA=/SUPERIOR/.test(a),lowerB=/INFERIOR/.test(b),upperB=/SUPERIOR/.test(b);
+      if((frontA&&rearB)||(rearA&&frontB)||(inA&&outB)||(outA&&inB)||(lowerA&&upperB)||(upperA&&lowerB))return 0;
       const ca=this.concept(a),cb=this.concept(b);
       const A=new Set(a.split(' ').filter(w=>w.length>2)),B=new Set(b.split(' ').filter(w=>w.length>2));
       const inter=[...A].filter(x=>B.has(x)).length,union=new Set([...A,...B]).size||1;
@@ -516,6 +538,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(a===b)score+=1;
       if(a.includes(b)||b.includes(a))score+=.4;
       if(ca&&cb&&ca===cb)score+=1;
+      if(ca==='COXIM_CAMBIO'&&cb==='COXIM_CAMBIO'&&((lowerA&&lowerB)||(upperA&&upperB)))score+=.75;
       if(ca==='KIT'&&cb==='KIT_AMORTECEDOR')score+=.35;
       return score;
     },
@@ -544,6 +567,28 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(['qty','value','extra'].includes(field)){o[field]=this.num(value);if(field==='qty')o.qtyShown=true;}
       else if(field==='ignored')o[field]=!!value;
       else o[field]=value;
+
+      // Evita o erro grave de manter “NÃO TEM” escondido quando existe preço informado.
+      if(field==='value'&&this.num(o.value)>0){
+        if(o.availability==='unavailable')o.availability='available';
+        if(o.priceType==='unavailable')o.priceType=this.num(o.qty)>1?'unknown':'unit';
+      }
+      if(field==='priceType'){
+        if(value==='unavailable'){o.availability='unavailable';o.value=0;}
+        else if(o.availability==='unavailable')o.availability='available';
+      }
+      if(field==='availability'){
+        if(value==='unavailable'){o.priceType='unavailable';o.value=0;}
+        else if(o.priceType==='unavailable')o.priceType=this.num(o.value)>0?'unit':'unknown';
+      }
+
+      const priceTypeEl=this.$(`priceType_${id}_${offerId}`);
+      const availabilityEl=this.$(`availability_${id}_${offerId}`);
+      const valueEl=this.$(`offerValue_${id}_${offerId}`);
+      if(priceTypeEl&&priceTypeEl.value!==o.priceType)priceTypeEl.value=o.priceType;
+      if(availabilityEl&&availabilityEl.value!==o.availability)availabilityEl.value=o.availability;
+      if(valueEl&&field!=='value'&&this.num(valueEl.value)!==this.num(o.value))valueEl.value=o.value||'';
+
       s.confirmed=false;s.offers=[];
       this.renderDraftStatus(id);this.save();
     },
@@ -587,6 +632,10 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(o.ignored) return {usable:false,issues:['Linha ignorada.'],request};
       if(!request) issues.push('Escolha qual peça da sua lista corresponde a este preço.');
       if(o.availability==='unavailable'||o.priceType==='unavailable'){
+        if(this.num(o.value)>0){
+          issues.push('Existe preço informado; esta linha não pode ser salva como “NÃO TEM”.');
+          return {usable:false,issues,request,unavailable:false};
+        }
         return {usable:!!request,issues,request,unavailable:true};
       }
       if(this.num(o.value)<=0) issues.push('Informe um preço válido.');
@@ -670,8 +719,8 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
           <div class="compare-essential-grid">
             <div class="wide"><label>Qual peça da sua lista?</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','requestedId',this.value==='__ignore'?'':this.value);Comparator.updateDraft('${s.id}','${o.id}','ignored',this.value==='__ignore')">${this.requestedOptions(o.ignored?'__ignore':o.requestedId)}</select></div>
             <div><label>Marca</label><input value="${this.attr(o.brand)}" placeholder="Ex.: LUK" oninput="Comparator.updateDraft('${s.id}','${o.id}','brand',this.value)"></div>
-            <div><label>Preço informado</label><input inputmode="decimal" value="${this.attr(o.value||'')}" placeholder="0,00" oninput="Comparator.updateDraft('${s.id}','${o.id}','value',this.value)"></div>
-            <div><label>Esse preço é</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','priceType',this.value)">
+            <div><label>Preço informado</label><input id="offerValue_${s.id}_${o.id}" inputmode="decimal" value="${this.attr(o.value||'')}" placeholder="0,00" oninput="Comparator.updateDraft('${s.id}','${o.id}','value',this.value)"></div>
+            <div><label>Esse preço é</label><select id="priceType_${s.id}_${o.id}" onchange="Comparator.updateDraft('${s.id}','${o.id}','priceType',this.value)">
               <option value="unknown" ${o.priceType==='unknown'?'selected':''}>ESCOLHER</option>
               <option value="unit" ${o.priceType==='unit'?'selected':''}>POR UNIDADE</option>
               <option value="total" ${o.priceType==='total'?'selected':''}>TOTAL DA LINHA</option>
@@ -681,7 +730,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
           <div class="compare-calc-note">${request?`Será comparado para <b>${this.esc(request.qty)} unidade(s)</b> pedida(s).`: 'Escolha a peça correspondente para liberar este preço.'} ${o.availability==='partial'?`Fornecedor informou disponibilidade parcial de <b>${this.esc(o.qty)}</b>.`:''}</div>
           <details class="compare-row-more"><summary>Mais detalhes</summary><div class="compare-advanced-grid">
             <div><label>Descrição original</label><input value="${this.attr(o.description)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','description',this.value)"></div>
-            <div><label>Disponibilidade</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','availability',this.value)"><option value="available" ${o.availability==='available'?'selected':''}>TEM / COTOU</option><option value="partial" ${o.availability==='partial'?'selected':''}>SÓ TEM PARTE</option><option value="unavailable" ${o.availability==='unavailable'?'selected':''}>NÃO TEM</option></select></div>
+            <div><label>Disponibilidade</label><select id="availability_${s.id}_${o.id}" onchange="Comparator.updateDraft('${s.id}','${o.id}','availability',this.value)"><option value="available" ${o.availability==='available'?'selected':''}>TEM / COTOU</option><option value="partial" ${o.availability==='partial'?'selected':''}>SÓ TEM PARTE</option><option value="unavailable" ${o.availability==='unavailable'?'selected':''}>NÃO TEM</option></select></div>
             <div><label>Qtd. informada</label><input inputmode="decimal" value="${this.attr(o.qty||'')}" placeholder="Opcional" oninput="Comparator.updateDraft('${s.id}','${o.id}','qty',this.value)"></div>
             <div><label>Frete/ST desta linha</label><input inputmode="decimal" value="${this.attr(o.extra||'')}" placeholder="0,00" oninput="Comparator.updateDraft('${s.id}','${o.id}','extra',this.value)"></div>
             <div><label>Código</label><input value="${this.attr(o.code)}" placeholder="Opcional" oninput="Comparator.updateDraft('${s.id}','${o.id}','code',this.value)"></div>
@@ -842,7 +891,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         <footer>${item.winner?`<span><i class="fa-solid fa-trophy"></i> MELHOR: <b>${this.esc(item.winner.supplierName)}</b></span><strong>${this.money(item.winner.total)}</strong>`:'<span><i class="fa-solid fa-triangle-exclamation"></i> Nenhum preço completo</span>'}</footer>
       </article>`).join('')}</div>`;
       const notes=`<div class="compare-truth-note"><i class="fa-solid fa-circle-info"></i><div><b>Como o destaque é calculado</b><span>O verde marca o menor total confirmado para a quantidade completa da peça. Estoque parcial não vence. O frete fixo não é rateado por peça; ele é somado uma única vez no total “Compra pelos menores”.</span></div></div>`;
-      const extra=`<details class="compare-more"><summary>Backup e limpeza</summary><div class="compare-simple-actions"><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"><button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar tudo</button></div></details>`;
+      const extra=`<details class="compare-more"><summary>Backup da comparação</summary><div class="compare-simple-actions"><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"></div></details>`;
       box.innerHTML=actions+summary+supplierStrip+desktop+mobile+notes+extra;
     },
     comparisonPdfName(){
@@ -960,13 +1009,23 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       reader.onload=()=>{try{const data=JSON.parse(reader.result);this.state=Object.assign(this.defaultState(),data);this.$('compareVehicle').value=this.state.vehicle||'';this.$('compareRequestText').value=this.state.requestText||'';this.renderAll();this.toast('Comparação importada.');}catch(e){this.toast('Arquivo inválido.');}input.value='';};
       reader.readAsText(file);
     },
-    clearAll(){
-      if(!this.confirm('Apagar somente a comparação de preços? O orçamento principal será preservado.'))return;
+    resetQuotation(){
+      if(!this.confirm('ZERAR ESTA COTAÇÃO? A lista, os 3 fornecedores, os preços conferidos e a comparação serão apagados. O orçamento principal continuará intacto.'))return;
+      Object.values(this.imagePreviews||{}).forEach(url=>{try{URL.revokeObjectURL(url);}catch(e){}});
+      this.imagePreviews={};
+      this.lastComparisonPdfBlob=null;
       this.state=this.defaultState();
-      localStorage.removeItem(this.STORAGE_KEY);
-      this.LEGACY_KEYS.forEach(key=>localStorage.removeItem(key));
-      this.$('compareVehicle').value='';this.$('compareRequestText').value='';this.renderAll();this.toast('Comparação limpa.');
-    }
+      try{
+        localStorage.removeItem(this.STORAGE_KEY);
+        this.LEGACY_KEYS.forEach(key=>localStorage.removeItem(key));
+      }catch(e){console.warn('Não foi possível limpar o armazenamento local',e);}
+      const vehicle=this.$('compareVehicle'),request=this.$('compareRequestText');
+      if(vehicle)vehicle.value='';
+      if(request)request.value='';
+      this.renderAll();
+      this.toast('Cotação zerada. O orçamento principal foi preservado.');
+    },
+    clearAll(){ this.resetQuotation(); }
   };
 
   window.Comparator=Comparator;
