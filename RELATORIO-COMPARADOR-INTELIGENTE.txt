@@ -1,0 +1,74 @@
+IMPLEMENTAÇÃO — COMPARADOR INTELIGENTE DE PREÇOS
+Projeto: SOS Orçamentos IA / OS_VALENCIO
+Data: 03/08/2026
+
+ARQUIVOS EXISTENTES ALTERADOS
+1. index.html
+   - Incluída a nova aba "Comparar" no menu inferior.
+   - Incluída a seção completa do comparador.
+   - Incluído o CSS e o JavaScript isolados do comparador.
+   - Menu mobile passou de 4 para 5 colunas para acomodar a nova aba.
+   - Nenhuma seção antiga foi removida.
+
+2. config.js
+   - Acrescentado somente GROQ_VISION_MODEL: "qwen/qwen3.6-27b".
+   - Demais configurações e dados da oficina foram preservados.
+
+NOVOS ARQUIVOS
+1. css/comparador.css
+2. js/comparador.js
+3. comparador-exemplo-uno.json
+4. RELATORIO-COMPARADOR-INTELIGENTE.txt
+
+FUNÇÕES IMPLEMENTADAS
+- Interpretação da lista solicitada por IA ou parser local.
+- Preservação de itens repetidos e alerta de possível duplicidade.
+- Cadastro ilimitado de fornecedores.
+- Leitura de resposta em texto.
+- Leitura de foto/tabela usando o modelo de visão configurado.
+- Extração de código, descrição, marca, quantidade, preço unitário,
+  total da linha, frete/ST, disponibilidade e observações.
+- Vínculo inteligente entre a nomenclatura do fornecedor e a peça solicitada.
+- Bloqueio de correspondências tecnicamente perigosas, como:
+  dianteiro x traseiro, coifa interna x externa e bucha x pivô.
+- Marcação amarela para vínculos ou preços ambíguos.
+- Quantidade parcial de estoque considerada no cálculo.
+- Alternativas de marca preservadas como ofertas separadas.
+- Cálculo do melhor fornecedor único.
+- Cálculo da compra combinada mais econômica.
+- Frete fixo contado uma única vez por fornecedor utilizado.
+- Frete/ST por linha incorporado ao custo comparável.
+- Preferência manual de oferta por item.
+- Matriz item solicitado x fornecedor.
+- Resumo copiável e compartilhável por WhatsApp.
+- PDF da comparação.
+- Transferência opcional das peças escolhidas para o orçamento atual,
+  com percentual de acréscimo informado pelo usuário.
+- Exportação e importação da comparação em JSON.
+- Salvamento automático local independente do orçamento principal.
+- Exemplo real do Uno já incluído para teste, sem carregar automaticamente.
+
+PRESERVAÇÃO DO SISTEMA EXISTENTE
+- Áudio e transcrição: preservados.
+- Parser e IA do orçamento: preservados.
+- Cadastro manual de peças e serviços: preservado.
+- Dados do orçamento: preservados.
+- Preview e zoom: preservados.
+- PDF do orçamento: preservado.
+- WhatsApp do orçamento: preservado.
+- Backup JSON do orçamento: preservado.
+- Arquivos teste.html, versailles.html, GUIA.HTML e js/api.js: não alterados.
+
+VALIDAÇÕES EXECUTADAS
+- Sintaxe do JavaScript original extraído do index.html: aprovada pelo Node.js.
+- Sintaxe de js/comparador.js: aprovada pelo Node.js.
+- Estrutura HTML: seis seções únicas e cinco botões de navegação.
+- IDs HTML duplicados: nenhum.
+- Teste lógico do otimizador com frete fixo: aprovado.
+- Teste de conflito coifa interna x externa: aprovado.
+- Teste de custo combinado x fornecedor único: aprovado.
+
+OBSERVAÇÃO IMPORTANTE
+A IA não deve escolher automaticamente uma peça quando a descrição for ambígua.
+Nesses casos, a oferta fica amarela e exige conferência manual. Isso evita que o
+menor preço seja selecionado para uma peça tecnicamente diferente.

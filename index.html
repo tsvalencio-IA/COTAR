@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SOS Orçamentos IA - thIAguinho Soluções</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/comparador.css?v=1.0.0">
+
+  <script src="config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root{
+      --navy:#111827;
+      --navy2:#1f2937;
+      --ink:#111827;
+      --muted:#6b7280;
+      --bg:#f3f4f6;
+      --card:#ffffff;
+      --line:#d1d5db;
+      --soft:#f9fafb;
+      --green:#166534;
+      --red:#991b1b;
+      --blue:#1d4ed8;
+      --radius:16px;
+      --shadow:0 12px 28px rgba(15,23,42,.08);
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    body{ font-family:Inter,Arial,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:88px; min-height:100vh; }
+    button,input,select,textarea{ font-family:inherit; font-size:16px; }
+    button{ cursor:pointer; }
+    .app{ max-width:1180px; margin:0 auto; padding:14px; }
+    .topbar{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; position:sticky; top:8px; z-index:30; }
+    .brand h1{ font-size:18px; font-weight:900; color:var(--navy); letter-spacing:-.02em; }
+    .brand p{ font-size:12px; color:var(--muted); margin-top:3px; }
+    .status{ font-size:12px; font-weight:800; color:var(--muted); white-space:nowrap; }
+    .section{ display:none; }
+    .section.active{ display:block; }
+    .section-title{ font-size:20px; font-weight:900; color:var(--navy); margin:18px 4px 12px; }
+    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
+    .col-12{grid-column:span 12}.col-8{grid-column:span 8}.col-6{grid-column:span 6}.col-4{grid-column:span 4}.col-3{grid-column:span 3}.col-2{grid-column:span 2}
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px; margin-bottom:12px; }
+    .card h3{ font-size:15px; font-weight:900; color:var(--navy); margin-bottom:12px; display:flex; gap:8px; align-items:center; }
+    label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:900; color:#374151; margin-bottom:6px; }
+    input,select,textarea{ width:100%; border:1.5px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); padding:11px; font-weight:700; outline:none; }
+    textarea{ min-height:86px; resize:vertical; line-height:1.35; }
+    input:focus,select:focus,textarea:focus{ border-color:var(--navy); box-shadow:0 0 0 4px rgba(17,24,39,.08); }
+    .btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{ border:0; border-radius:12px; padding:11px 13px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; gap:8px; background:#e5e7eb; color:#111827; min-height:44px; }
+    .btn.main{ background:var(--navy); color:#fff; }
+    .btn.ok{ background:var(--green); color:#fff; }
+    .btn.bad{ background:var(--red); color:#fff; }
+    .btn.line{ background:#fff; border:1px solid var(--line); }
+    .btn.small{ font-size:13px; min-height:36px; padding:8px 10px; }
+    .btn.block{ width:100%; }
+    .btn.recording{ background:var(--red); color:#fff; animation:pulse 1s infinite; }
+    @keyframes pulse{ 50%{box-shadow:0 0 0 10px rgba(153,27,27,.12)} }
+    .bottomnav{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); box-shadow:0 -10px 30px rgba(15,23,42,.12); z-index:60; display:grid; grid-template-columns:repeat(5,1fr); padding:8px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-right)); }
+    .navbtn{ border:0; background:transparent; border-radius:12px; color:#374151; font-weight:900; font-size:12px; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; min-height:54px; }
+    .navbtn i{ font-size:18px; }
+    .navbtn.active{ background:var(--navy); color:#fff; }
+    .help{ background:#f9fafb; border:1px dashed #9ca3af; border-radius:14px; padding:12px; color:#4b5563; font-size:13px; line-height:1.45; }
+    .note{ font-size:12px; color:var(--muted); line-height:1.45; }
+    .totals{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .totalbox{ background:var(--soft); border:1px solid var(--line); border-radius:14px; padding:12px; }
+    .totalbox span{ display:block; font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase; }
+    .totalbox b{ display:block; font-size:21px; color:var(--navy); margin-top:4px; }
+    .totalbox.grand{ background:#ecfdf5; border-color:#86efac; }
+    .totalbox.grand b{ font-size:25px; color:var(--green); }
+    .item-card{ border:1px solid var(--line); border-radius:16px; background:#fff; padding:12px; margin-bottom:10px; }
+    .item-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+    .item-head b{ font-size:13px; color:var(--muted); }
+    .item-total{ font-weight:900; color:var(--green); }
+    .item-grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:10px; }
+    .pdfsheet{ background:#fff; max-width:900px; margin:0 auto; border:1px solid #cbd5e1; box-shadow:var(--shadow); padding:24px; }
+    .pdf-head{ display:flex; justify-content:space-between; gap:20px; border-bottom:4px solid var(--navy); padding-bottom:18px; margin-bottom:22px; }
+    .pdf-head h1{ font-size:18px; letter-spacing:.08em; }
+    .pdf-head p{ font-size:11px; color:#334155; line-height:1.5; }
+    .pdf-title{ text-align:right; font-size:18px; font-weight:900; letter-spacing:.06em; color:var(--navy); }
+    .pdf-table{ width:100%; border-collapse:collapse; margin-bottom:20px; }
+    .pdf-table td,.pdf-table th{ border:1px solid #cbd5e1; padding:8px; font-size:12px; vertical-align:top; }
+    .pdf-table th{ background:var(--navy); color:#fff; }
+    .pdf-bar{ background:var(--navy); color:#fff; font-weight:900; padding:9px 10px; font-size:12px; text-transform:uppercase; margin:14px 0 8px; }
+    .right{ text-align:right; }
+    .empty{ padding:16px; text-align:center; color:var(--muted); }
+    .powered{ text-align:center; color:#64748b; font-size:12px; font-weight:900; margin:24px 0 4px; }
+    .toast{ position:fixed; left:50%; bottom:88px; transform:translateX(-50%); background:#111827; color:#fff; padding:13px 18px; border-radius:999px; box-shadow:var(--shadow); font-weight:800; z-index:100; display:none; max-width:92vw; text-align:center; }
+    .toast.show{ display:block; }
+    .hidden{ display:none!important; }
+    @media(max-width:760px){
+      body{padding-bottom:92px}.app{padding:10px}.topbar{top:0;border-radius:0;margin:-10px -10px 12px}.brand h1{font-size:16px}.status{display:none}
+      .col-8,.col-6,.col-4,.col-3,.col-2{grid-column:span 12}.btnrow .btn{flex:1}.totals{grid-template-columns:1fr 1fr}.totalbox.grand{grid-column:span 2}
+      .item-grid .m12{grid-column:span 12!important}.item-grid .m6{grid-column:span 6!important}.item-grid .m4{grid-column:span 4!important}
+      .pdfsheet{min-width:760px;padding:14px}.preview-box{overflow:auto;margin:0 -10px;padding:0 10px}.bottomnav{gap:4px}.navbtn{font-size:11px}.navbtn i{font-size:17px}input,select,textarea{font-size:16px}.card{padding:12px}.section-title{font-size:18px}
+    }
+
+
+    /* AJUSTE CIRÚRGICO MOBILE — edição de peças/serviços sem tabela espremida */
+    .item-grid > div{min-width:0;}
+    .item-card input,.item-card select,.item-card textarea{max-width:100%;}
+    @media(max-width:760px){
+      .item-card{padding:14px;border-radius:18px;overflow:hidden;}
+      .item-head{align-items:flex-start;gap:10px;}
+      .item-head b{font-size:14px;}
+      .item-total{font-size:15px;text-align:right;}
+      .item-grid{grid-template-columns:repeat(6,1fr);gap:12px;}
+      .item-grid .col-12,.item-grid .col-8,.item-grid .col-7,.item-grid .col-6,.item-grid .col-5,.item-grid .col-4,.item-grid .col-3,.item-grid .col-2{grid-column:span 6;}
+      .item-grid .m12{grid-column:span 6!important;}
+      .item-grid .m6{grid-column:span 3!important;}
+      .item-grid .m4{grid-column:span 3!important;}
+      .item-grid input,.item-grid select,.item-grid textarea{font-size:16px;min-height:48px;padding:12px;}
+      .item-grid textarea{min-height:76px;}
+      .item-card .btn.bad{width:100%;min-height:46px;}
+      #partsList,#servicesList{padding-bottom:18px;}
+      .preview-box{overflow:auto;-webkit-overflow-scrolling:touch;min-height:calc(100vh - 180px);}
+      .preview-box .pdfsheet{min-width:760px;transform:scale(.86);transform-origin:top left;margin-right:-110px;}
+    }
+    @media(max-width:420px){
+      .item-grid .m6{grid-column:span 6!important;}
+      .item-grid .m4{grid-column:span 6!important;}
+      .btnrow .btn{flex:1 1 100%;}
+      .preview-box .pdfsheet{transform:scale(.78);margin-right:-190px;}
+    }
+
+
+    /* CORREÇÃO FINAL — preview 100% responsivo no celular, sem arrastar para o lado */
+    .statusbar{display:flex;align-items:center;gap:8px;}
+    .admin-config-btn{border:0;background:#f3f4f6;color:#6b7280;border-radius:12px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
+    .preview-compact .card{margin-top:12px;}
+    @media(max-width:760px){
+      .statusbar{gap:4px}.admin-config-btn{width:36px;height:36px;font-size:15px;opacity:.55}.admin-config-btn:active{opacity:1}
+      .preview-box{overflow:visible!important;margin:0!important;padding:0!important;min-height:auto!important;width:100%!important;}
+      .preview-box .pdfsheet,.pdfsheet{min-width:0!important;width:100%!important;max-width:100%!important;transform:none!important;margin:0!important;padding:8px!important;box-shadow:none!important;}
+      .pdf-head{display:block!important;padding-bottom:10px!important;margin-bottom:12px!important;border-bottom-width:3px!important;}
+      .pdf-head h1{font-size:12px!important;letter-spacing:.04em!important;}
+      .pdf-head p{font-size:7.5px!important;line-height:1.25!important;}
+      .pdf-title{text-align:left!important;font-size:11px!important;margin-top:8px!important;}
+      .pdf-bar{font-size:8.5px!important;padding:6px 7px!important;margin:10px 0 5px!important;}
+      .pdf-table{width:100%!important;table-layout:fixed!important;margin-bottom:10px!important;}
+      .pdf-table td,.pdf-table th{font-size:7.2px!important;padding:4px 3px!important;line-height:1.18!important;word-break:break-word!important;overflow-wrap:anywhere!important;}
+      .pdf-table th{font-size:7px!important;}
+      .preview-compact .pdf-table td,.preview-compact .pdf-table th{font-size:6.8px!important;padding:3px 2px!important;}
+      .preview-compact .pdf-bar{font-size:8px!important;padding:5px 6px!important;}
+      .preview-compact .pdf-head h1{font-size:11px!important;}
+      .preview-compact .pdf-title{font-size:10px!important;}
+      .bottomnav{grid-template-columns:repeat(5,1fr)!important;}
+      .config-only{display:none!important;}
+    }
+
+
+
+    /* Zoom somente na aba Preview: começa ajustado na tela e permite aproximar sem alterar PDF/template */
+    .zoom-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .zoom-label{font-size:12px;font-weight:900;color:var(--muted);min-width:52px;text-align:center}
+    #secPreview .preview-box{overflow:auto!important;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;max-height:none!important}
+    #secPreview #preview{transform:scale(var(--previewZoom,1));transform-origin:top left;transition:transform .12s ease;width:100%}
+    @media(max-width:760px){
+      #secPreview .preview-box{padding-bottom:18px!important}
+    }
+
+    @media(print){ .topbar,.bottomnav,.no-print{display:none!important} body{padding:0;background:#fff}.app{max-width:none;padding:0}.card{box-shadow:none;border:0}.pdfsheet{box-shadow:none;border:0;max-width:100%;padding:0}.section{display:none!important}.section.printme{display:block!important} }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar no-print">
+      <div class="brand"><h1><i class="fa-solid fa-file-invoice-dollar"></i> SOS Orçamentos IA</h1><p>Áudio, edição manual, preview e PDF.</p></div>
+      <div class="statusbar"><div class="status" id="saveStatus">Pronto</div><button class="admin-config-btn no-print" title="Configuração" onclick="App.show('secConfig')"><i class="fa-solid fa-gear"></i></button></div>
+    </div>
+
+    <section id="secAudio" class="section active">
+      <h2 class="section-title">Preencher por áudio</h2>
+      <div class="grid">
+        <div class="card col-8">
+          <h3><i class="fa-solid fa-microphone-lines"></i> Áudio ou texto</h3>
+          <div class="btnrow">
+            <button id="recordBtn" class="btn main" onclick="App.Audio.toggle()"><i class="fa-solid fa-microphone"></i> Gravar</button>
+            <label class="btn line" for="audioFile"><i class="fa-solid fa-upload"></i> Enviar áudio</label>
+            <input id="audioFile" class="hidden" type="file" accept="audio/*" onchange="App.Audio.upload(this)">
+            <button class="btn ok" onclick="App.AI.processText()"><i class="fa-solid fa-wand-magic-sparkles"></i> Aplicar</button>
+            <button class="btn bad" onclick="App.clearBudget()"><i class="fa-solid fa-broom"></i> Novo / limpar</button>
+          </div>
+          <label style="margin-top:14px">Texto transcrito editável</label>
+          <textarea id="audioText" style="min-height:170px" placeholder="A transcrição aparece aqui. Corrija palavras se precisar e toque em Aplicar."></textarea>
+          <div class="btnrow" style="margin-top:10px">
+            <button class="btn line" onclick="App.clearAudioText()"><i class="fa-solid fa-eraser"></i> Limpar texto</button>
+            <button class="btn line" onclick="App.show('secPreview')"><i class="fa-solid fa-eye"></i> Pré-visualizar</button>
+          </div>
+        </div>
+        <div class="card col-4">
+          <h3><i class="fa-solid fa-circle-info"></i> Como falar</h3>
+          <div class="help">Exemplo simples:<br><br><b>kit junta tampa de válvula 383, tampa de válvula usada 400, dois discos de freio 640, jogo de pastilha 293 e serviço 500.</b><br><br>Se falar <b>dois discos 640</b>, o sistema entende total dos dois. Se falar <b>640 cada</b>, soma por unidade.</div>
+          <p class="note" style="margin-top:10px">Você pode mandar vários áudios. Cada áudio novo adiciona ao orçamento, sem apagar o anterior.</p>
+        </div>
+        <div class="card col-12"><details><summary style="font-weight:900;cursor:pointer"><i class="fa-solid fa-code"></i> Detalhes técnicos da IA</summary><pre id="aiReturn" style="white-space:pre-wrap;font-size:12px;line-height:1.45;background:#f9fafb;border:1px solid var(--line);border-radius:12px;padding:12px;max-height:260px;overflow:auto;margin-top:10px">Aguardando áudio ou texto...</pre></details></div>
+        <div class="card col-12 preview-compact"><h3><i class="fa-solid fa-eye"></i> Preview automático</h3><div class="btnrow" style="margin-bottom:10px"><button class="btn ok" onclick="App.generatePDF()"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</button><button class="btn line" onclick="App.openWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button><button class="btn line" onclick="App.show('secItens')"><i class="fa-solid fa-pen-to-square"></i> Editar itens</button></div><div class="preview-box"><div id="previewAudio"></div></div></div>
+      </div>
+    </section>
+
+    <section id="secItens" class="section">
+      <h2 class="section-title">Orçamento</h2>
+      <div class="card"><h3><i class="fa-solid fa-calculator"></i> Totais</h3><div class="totals"><div class="totalbox"><span>Serviços</span><b id="totalServicos">R$ 0,00</b></div><div class="totalbox"><span>Peças</span><b id="totalPecas">R$ 0,00</b></div><div class="totalbox"><span>Horas</span><b id="totalHoras">0,00 h</b></div><div class="totalbox grand"><span>Total geral</span><b id="totalGeral">R$ 0,00</b></div></div></div>
+      <div class="card"><h3><i class="fa-solid fa-gears"></i> Peças / materiais</h3><div class="btnrow" style="margin-bottom:12px"><button class="btn main" onclick="App.addPart()"><i class="fa-solid fa-plus"></i> Peça</button><button class="btn line" onclick="App.addQuickPart()"><i class="fa-solid fa-bolt"></i> Peça rápida</button></div><div id="partsList"></div></div>
+      <div class="card"><h3><i class="fa-solid fa-screwdriver-wrench"></i> Serviços / mão de obra</h3><div class="btnrow" style="margin-bottom:12px"><button class="btn main" onclick="App.addService()"><i class="fa-solid fa-plus"></i> Serviço</button><button class="btn line" onclick="App.addQuickService()"><i class="fa-solid fa-bolt"></i> Serviço rápido</button></div><div id="servicesList"></div></div>
+    </section>
+
+    <section id="secComparador" class="section">
+      <h2 class="section-title">Comparador inteligente de preços</h2>
+
+      <div class="card">
+        <div class="compare-title-row">
+          <h3><i class="fa-solid fa-list-check"></i> 1. Lista solicitada</h3>
+          <div class="compare-toolbar">
+            <button class="btn line small" onclick="Comparator.loadBudgetParts()"><i class="fa-solid fa-file-import"></i> Usar peças do orçamento</button>
+            <button class="btn line small" onclick="Comparator.loadExample()"><i class="fa-solid fa-flask"></i> Carregar exemplo enviado</button>
+          </div>
+        </div>
+        <div class="compare-grid" style="margin-top:12px">
+          <div class="col-4"><label>Veículo / aplicação</label><input id="compareVehicle" placeholder="Ex.: Uno 1.0 Way 2010 — quadrado"></div>
+          <div class="col-8"><label>Lista exatamente como foi solicitada</label><textarea id="compareRequestText" style="min-height:170px" placeholder="Cole a lista com uma peça por linha. O sistema preserva itens repetidos e marca dúvidas para conferência."></textarea></div>
+        </div>
+        <div class="compare-toolbar" style="margin-top:10px">
+          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-wand-magic-sparkles"></i> Interpretar lista</button>
+          <button class="btn line" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Item manual</button>
+        </div>
+        <div id="compareGlobalBusy" class="compare-progress"><span class="compare-spinner"></span><span id="compareGlobalBusyText">Processando...</span></div>
+        <div class="compare-divider"></div>
+        <div id="compareRequestedList"></div>
+      </div>
+
+      <div class="card">
+        <div class="compare-title-row">
+          <h3><i class="fa-solid fa-truck-fast"></i> 2. Respostas dos fornecedores</h3>
+          <button class="btn main" onclick="Comparator.addSupplier()"><i class="fa-solid fa-plus"></i> Adicionar fornecedor</button>
+        </div>
+        <div class="help" style="margin:12px 0">
+          Cole a mensagem recebida ou envie a foto da tabela. O sistema separa marca, quantidade, preço unitário, total da linha, frete/ST e disponibilidade. Correspondências duvidosas ficam amarelas e não entram automaticamente na compra.
+        </div>
+        <div id="compareSuppliers"></div>
+      </div>
+
+      <div class="card">
+        <div class="compare-title-row">
+          <h3><i class="fa-solid fa-scale-balanced"></i> 3. Comparação e plano de compra</h3>
+          <span id="compareSaveStatus" class="compare-muted">Comparação salva localmente</span>
+        </div>
+        <div id="compareResults" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card no-print">
+        <h3><i class="fa-solid fa-database"></i> Backup da comparação</h3>
+        <div class="compare-toolbar">
+          <button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button>
+          <label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label>
+          <input id="compareImport" class="compare-json-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)">
+          <button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar comparação</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="secDados" class="section">
+      <h2 class="section-title">Dados do orçamento</h2>
+      <div class="grid">
+        <div class="card col-12"><h3><i class="fa-solid fa-building"></i> Oficina</h3><div class="grid"><div class="col-4"><label>Nome</label><input id="oficinaNome"></div><div class="col-3"><label>CNPJ</label><input id="oficinaCnpj"></div><div class="col-2"><label>Tel/Whats</label><input id="oficinaTelefone"></div><div class="col-3"><label>Email</label><input id="oficinaEmail"></div><div class="col-12"><label>Endereço</label><input id="oficinaEndereco"></div></div></div>
+        <div class="card col-12"><h3><i class="fa-solid fa-file-contract"></i> Cabeçalho</h3><div class="grid"><div class="col-3"><label>OS</label><input id="os"></div><div class="col-3"><label>Emissão</label><input id="emissao" type="date"></div><div class="col-3"><label>Status</label><input id="status"></div><div class="col-3"><label>Fiscal contrato</label><input id="fiscalContrato"></div><div class="col-6"><label>Cliente</label><input id="cliente"></div><div class="col-3"><label>CPF/CNPJ</label><input id="cpfCnpj"></div><div class="col-3"><label>Telefone</label><input id="telefone"></div><div class="col-4"><label>Veículo</label><input id="veiculo"></div><div class="col-2"><label>Placa</label><input id="placa"></div><div class="col-2"><label>Ano</label><input id="ano"></div><div class="col-2"><label>KM</label><input id="km"></div><div class="col-2"><label>Prefixo/Patrimônio</label><input id="prefixo"></div><div class="col-12"><label>Chassi</label><input id="chassi"></div></div></div>
+        <div class="card col-6"><h3><i class="fa-solid fa-comment-medical"></i> Defeito reclamado</h3><textarea id="defeito"></textarea></div>
+        <div class="card col-6"><h3><i class="fa-solid fa-stethoscope"></i> Diagnóstico técnico</h3><textarea id="diagnostico"></textarea></div>
+      </div>
+    </section>
+
+    <section id="secPreview" class="section">
+      <h2 class="section-title">Preview do orçamento</h2>
+      <div class="card no-print"><h3><i class="fa-solid fa-eye"></i> Conferência antes de gerar</h3><div class="btnrow"><button class="btn main" onclick="App.renderPreview()"><i class="fa-solid fa-rotate"></i> Atualizar preview</button><button class="btn ok" onclick="App.generatePDF()"><i class="fa-solid fa-file-pdf"></i> Gerar PDF</button><button class="btn line" onclick="App.sharePDF()"><i class="fa-solid fa-share-nodes"></i> Compartilhar PDF</button><button class="btn line" onclick="App.openWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button></div><div class="zoom-controls"><button class="btn line small" onclick="App.zoomPreview(-0.1)"><i class="fa-solid fa-magnifying-glass-minus"></i> Menos</button><span class="zoom-label" id="previewZoomLabel">100%</span><button class="btn line small" onclick="App.zoomPreview(0.1)"><i class="fa-solid fa-magnifying-glass-plus"></i> Mais</button><button class="btn line small" onclick="App.setPreviewZoom(1)"><i class="fa-solid fa-compress"></i> Ajustar</button></div><p class="note" style="margin-top:10px">Confira o orçamento abaixo antes de gerar o PDF. Use Mais/Menos para aproximar.</p></div>
+      <div class="preview-box"><div id="preview"></div></div>
+    </section>
+
+    <section id="secConfig" class="section">
+      <h2 class="section-title">Configuração</h2>
+      <div class="grid">
+        <div class="card col-6"><h3><i class="fa-solid fa-key"></i> Groq</h3><label>Groq API Key</label><input id="cfgKey" type="password" placeholder="gsk_..."><label style="margin-top:12px">Modelo de transcrição</label><input id="cfgTranscription" placeholder="whisper-large-v3-turbo"><label style="margin-top:12px">Modelo IA texto</label><input id="cfgChat" placeholder="openai/gpt-oss-20b"><button class="btn main block" style="margin-top:12px" onclick="App.saveConfigRuntime()"><i class="fa-solid fa-save"></i> Usar nesta sessão</button><p class="note" style="margin-top:10px">Para deixar fixo, altere o arquivo <b>config.js</b> no GitHub.</p></div>
+        <div class="card col-6"><h3><i class="fa-solid fa-broom"></i> Limpeza e backup</h3><div class="btnrow"><button class="btn line" onclick="App.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar JSON</button><label class="btn line" for="jsonImport"><i class="fa-solid fa-file-import"></i> Importar JSON</label><input id="jsonImport" class="hidden" type="file" accept="application/json" onchange="App.importJSON(this)"><button class="btn line" onclick="App.clearItems()"><i class="fa-solid fa-eraser"></i> Limpar peças/serviços</button><button class="btn bad" onclick="App.clearBudget()"><i class="fa-solid fa-trash"></i> Limpar orçamento</button><button class="btn bad" onclick="App.clearLocal()"><i class="fa-solid fa-database"></i> Limpar dados locais</button></div><p class="note" style="margin-top:10px">Use “Limpar dados locais” quando subir uma nova versão e o navegador continuar carregando orçamento antigo.</p></div>
+      </div>
+    </section>
+    <div class="powered" id="powered"></div>
+  </div>
+
+  <nav class="bottomnav no-print"><button class="navbtn active" data-target="secAudio" onclick="App.show('secAudio')"><i class="fa-solid fa-microphone-lines"></i>Áudio</button><button class="navbtn" data-target="secItens" onclick="App.show('secItens')"><i class="fa-solid fa-screwdriver-wrench"></i>Orçamento</button><button class="navbtn" data-target="secComparador" onclick="App.show('secComparador')"><i class="fa-solid fa-scale-balanced"></i>Comparar</button><button class="navbtn" data-target="secDados" onclick="App.show('secDados')"><i class="fa-solid fa-clipboard-list"></i>Dados</button><button class="navbtn" data-target="secPreview" onclick="App.show('secPreview')"><i class="fa-solid fa-eye"></i>Preview</button></nav>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const App = {
+      state:{services:[],parts:[],lastPdfBlob:null,previewZoom:1},
+      ids:['oficinaNome','oficinaCnpj','oficinaTelefone','oficinaEmail','oficinaEndereco','os','emissao','status','fiscalContrato','cliente','cpfCnpj','telefone','veiculo','placa','ano','km','prefixo','chassi','defeito','diagnostico'],
+      $(id){return document.getElementById(id);},
+      money(v){return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});},
+      num(v){ if(typeof v === 'number') return Number.isFinite(v)?v:0; let x=String(v??'').trim().replace(/[^\d,.-]/g,''); if(!x) return 0; const comma=x.lastIndexOf(','), dot=x.lastIndexOf('.'); if(comma>-1&&dot>-1){x=comma>dot?x.replace(/\./g,'').replace(',','.'):x.replace(/,/g,'');}else if(comma>-1){x=x.replace(',','.');}else if(dot>-1){const parts=x.split('.'); if(parts.length>2||parts[parts.length-1].length===3)x=x.replace(/\./g,'');} return Number(x)||0; },
+      today(){return new Date().toISOString().slice(0,10);}, osCode(){return Math.random().toString(36).slice(2,8).toUpperCase();},
+      toast(msg){const t=this.$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>t.classList.remove('show'),3000);},
+      init(){ const cfg=window.SOS_CONFIG||{}, office=cfg.OFFICE||{}; this.$('oficinaNome').value=office.nome||'S.O.S. VALÊNCIO'; this.$('oficinaCnpj').value=office.cnpj||''; this.$('oficinaTelefone').value=office.telefone||''; this.$('oficinaEmail').value=office.email||''; this.$('oficinaEndereco').value=office.endereco||''; this.$('status').value=(cfg.PDF&&cfg.PDF.statusPadrao)||'Orçamento_Enviado'; this.$('emissao').value=this.today(); this.$('os').value=this.osCode(); this.$('powered').textContent=(cfg.BRAND&&cfg.BRAND.assinatura)||'Powered by thIAguinho Soluções Digitais'; this.$('cfgKey').value=(window.OS_API&&typeof window.OS_API.getGroqKey==='function'?window.OS_API.getGroqKey():(cfg.GROQ_API_KEY||'')); this.$('cfgTranscription').value=cfg.GROQ_TRANSCRIPTION_MODEL||'whisper-large-v3-turbo'; this.$('cfgChat').value=cfg.GROQ_CHAT_MODEL||'openai/gpt-oss-20b'; document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>this.scheduleSave())); this.loadLocal(); this.renderAll(); this.setupPreviewPinchZoom(); this.show('secAudio'); },
+      show(id){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active','printme')); if(!this.$(id))id='secAudio'; this.$(id).classList.add('active'); if(id==='secPreview'){this.$(id).classList.add('printme'); this.renderPreview();} document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.target===id)); window.scrollTo({top:0,behavior:'smooth'}); },
+      collect(){const d={}; this.ids.forEach(id=>d[id]=this.$(id).value); d.services=this.state.services; d.parts=this.state.parts; return d;},
+      apply(d){if(!d)return; this.ids.forEach(id=>{if(d[id]!==undefined)this.$(id).value=d[id];}); this.state.services=Array.isArray(d.services)?d.services:[]; this.state.parts=Array.isArray(d.parts)?d.parts:[]; this.renderAll();},
+      scheduleSave(){clearTimeout(this._saveTimer);this._saveTimer=setTimeout(()=>this.saveLocal(false),500);this.updateTotals();},
+      saveLocal(manual){localStorage.setItem('sos_orcamento_atual',JSON.stringify(this.collect()));this.$('saveStatus').textContent='Salvo local'; if(manual)this.toast('Orçamento salvo no navegador.');},
+      loadLocal(){const raw=localStorage.getItem('sos_orcamento_atual'); if(!raw)return; try{this.apply(JSON.parse(raw)); this.toast('Orçamento local carregado.');}catch(e){}},
+      clearLocal(){if(confirm('Limpar dados salvos neste navegador?')){localStorage.removeItem('sos_orcamento_atual');this.toast('Dados locais limpos.');}},
+      resetBudgetFields(keepOffice=true){ const office={oficinaNome:this.$('oficinaNome').value,oficinaCnpj:this.$('oficinaCnpj').value,oficinaTelefone:this.$('oficinaTelefone').value,oficinaEmail:this.$('oficinaEmail').value,oficinaEndereco:this.$('oficinaEndereco').value}; this.ids.forEach(id=>this.$(id).value=''); if(keepOffice)Object.entries(office).forEach(([k,v])=>this.$(k).value=v); this.$('emissao').value=this.today(); this.$('os').value=this.osCode(); this.$('status').value=(window.SOS_CONFIG.PDF&&window.SOS_CONFIG.PDF.statusPadrao)||'Orçamento_Enviado'; this.state.services=[]; this.state.parts=[]; this.state.lastPdfBlob=null; this.$('audioText').value=''; this.$('aiReturn').textContent='Aguardando áudio ou texto...'; this.renderAll();},
+      clearBudget(){if(!confirm('Criar novo orçamento e limpar tudo da tela?'))return; localStorage.removeItem('sos_orcamento_atual'); this.resetBudgetFields(true); this.saveLocal(true); this.show('secAudio'); this.toast('Orçamento limpo.');},
+      clearItems(){if(!confirm('Limpar todas as peças e serviços?'))return; this.state.services=[]; this.state.parts=[]; this.renderAll(); this.saveLocal(true); this.toast('Peças e serviços limpos.');},
+      clearAudioText(){this.$('audioText').value='';this.$('aiReturn').textContent='Aguardando áudio ou texto...';this.toast('Texto limpo.');},
+      normText(v,upper=true){let x=String(v||'').replace(/\s+/g,' ').trim();return upper?x.toUpperCase():x;},
+      cleanKey(txt){return this.normText(txt||'',true).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(DE|DA|DO|DAS|DOS|A|O|AS|OS|E|EM|NA|NO|NAS|NOS|AOS|AO)\b/g,' ').replace(/\bJUNTOS\b/g,'JUNTO').replace(/\bJUNTAS\b/g,'JUNTA').replace(/\bTAMPAS\b/g,'TAMPA').replace(/\bVALVULAS\b/g,'VALVULA').replace(/\bDISCOS\b/g,'DISCO').replace(/\bPASTILHAS\b/g,'PASTILHA').replace(/\bUSADAS\b/g,'USADA').replace(/\bFREIOS\b/g,'FREIO').replace(/\bDENTREIROS\b/g,'DIANTEIRO').replace(/\bDENTROIRES\b/g,'DIANTEIRO').replace(/\bDIANTEIROS\b/g,'DIANTEIRO').replace(/\bTRASEIROS\b/g,'TRASEIRO').replace(/\s+/g,' ').trim();},
+      partKey(p){return this.cleanKey(p.descricao||'')+'|'+this.cleanKey(p.fornecedor||'');}, isSamePart(a,b){const ak=this.cleanKey(a.descricao||''),bk=this.cleanKey(b.descricao||'');if(!ak||!bk)return false;if(ak===bk)return true;const av=this.num(a.valorUnit??0),bv=this.num(b.valorUnit??0),aq=this.num(a.qtd??1),bq=this.num(b.qtd??1);const sameNumbers=Math.abs(av-bv)<0.01&&Math.abs(aq-bq)<0.01;const aw=ak.split(' ').filter(w=>w.length>=6),bw=bk.split(' ').filter(w=>w.length>=6);const shared=aw.filter(w=>bw.some(x=>x===w||x.includes(w)||w.includes(x))).length;return sameNumbers&&shared>=1;}, cleanServiceKeyText(txt){return this.cleanKey(txt||'').replace(/^SERVICO\s+/,'').replace(/^MAO OBRA\s+/,'').replace(/^DE\s+/,'').replace(/\s+/g,' ').trim();}, serviceKey(s){return this.cleanKey(s.secao||'')+'|'+this.cleanServiceKeyText(s.descricao||'');},
+      addPart(p={}){const obj={cod:this.normText(p.cod||'',true),descricao:this.normText(p.descricao||'',true),fornecedor:this.normText(p.fornecedor||'',true),qtd:this.num(p.qtd)||1,valorUnit:this.num(p.valorUnit??p.valor_unitario??p.valor??0),desc:this.num(p.desc)||0}; if(!obj.descricao)return; const k=this.partKey(obj); const old=this.state.parts.find(x=>this.partKey(x)===k||this.isSamePart(x,obj)); if(old){if(obj.cod)old.cod=obj.cod;if(obj.fornecedor)old.fornecedor=obj.fornecedor;if(obj.qtd>0)old.qtd=obj.qtd;if(obj.valorUnit>0)old.valorUnit=obj.valorUnit;if(obj.desc>0)old.desc=obj.desc;}else{this.state.parts.push(obj);} this.renderAll(); this.saveLocal(false);},
+      addQuickPart(){this.addPart({descricao:'NOVA PEÇA',qtd:1,valorUnit:0,desc:0});this.show('secItens');}, removePart(i){this.state.parts.splice(i,1);this.renderAll();this.saveLocal(false);},
+      addService(s={}){let tmo=this.num(s.tmo)||0, valorHora=this.num(s.valorHora??s.valor_hora??0), valorTotal=this.num(s.valorTotal??s.valor_total??s.total??s.valor??0); const obj={cod:this.normText(s.cod||'',true),secao:this.normText(s.secao||'MECANICA',true),sistema:this.normText(s.sistema||'MECANICA E ELETRICA GERAL EM VEICULOS PEQUENOS E MEDIOS\nTipo: CARRO',true),descricao:this.normText(s.descricao||'',true),tmo,valorHora,valorTotal,desc:this.num(s.desc)||0}; if(!obj.descricao&&valorTotal>0)obj.descricao='SERVIÇO'; if(!obj.descricao)return; const k=this.serviceKey(obj); const old=this.state.services.find(x=>this.serviceKey(x)===k); if(old){if(obj.cod)old.cod=obj.cod;if(obj.sistema)old.sistema=obj.sistema;if(obj.tmo>0)old.tmo=obj.tmo;if(obj.valorTotal>0){old.valorTotal=obj.valorTotal;old.valorHora=0;old.tmo=0;}else if(obj.valorHora>0){old.valorHora=obj.valorHora;old.valorTotal=0;if(old.tmo<=0)old.tmo=1;}if(obj.desc>0)old.desc=obj.desc;}else{this.state.services.push(obj);} this.renderAll(); this.saveLocal(false);},
+      addQuickService(){this.addService({descricao:'NOVO SERVIÇO',valorTotal:0,tmo:0,valorHora:0,desc:0});this.show('secItens');}, removeService(i){this.state.services.splice(i,1);this.renderAll();this.saveLocal(false);},
+      serviceTotal(s){const direct=this.num(s.valorTotal??s.valor_total??0); if(direct>0)return direct*(1-this.num(s.desc)/100); const t=this.num(s.tmo), vh=this.num(s.valorHora); return (t>0?t:vh>0?1:0)*vh*(1-this.num(s.desc)/100);}, partTotal(p){return this.num(p.qtd)*this.num(p.valorUnit)*(1-this.num(p.desc)/100);},
+      renderParts(){const box=this.$('partsList'); if(!this.state.parts.length){box.innerHTML='<div class="empty">Nenhuma peça lançada.</div>';return;} box.innerHTML=this.state.parts.map((p,i)=>`<div class="item-card"><div class="item-head"><b>Peça ${i+1}</b><span class="item-total">${this.money(this.partTotal(p))}</span></div><div class="item-grid"><div class="col-2 m6"><label>Cód.</label><input value="${this.esc(p.cod)}" oninput="App.state.parts[${i}].cod=this.value;App.scheduleSave()"></div><div class="col-5 m12"><label>Descrição da peça</label><textarea oninput="App.state.parts[${i}].descricao=this.value;App.scheduleSave()">${this.esc(p.descricao)}</textarea></div><div class="col-3 m12"><label>Marca/Fornecedor</label><input value="${this.esc(p.fornecedor)}" oninput="App.state.parts[${i}].fornecedor=this.value;App.scheduleSave()"></div><div class="col-2 m6"><label>Qtd.</label><input value="${p.qtd}" inputmode="decimal" oninput="App.state.parts[${i}].qtd=App.num(this.value);App.scheduleSave()"></div><div class="col-3 m6"><label>Valor un.</label><input value="${p.valorUnit}" inputmode="decimal" oninput="App.state.parts[${i}].valorUnit=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m6"><label>Desc. %</label><input value="${p.desc}" inputmode="decimal" oninput="App.state.parts[${i}].desc=App.num(this.value);App.scheduleSave()"></div><div class="col-7 m12"><label>Ação</label><button class="btn bad small" onclick="App.removePart(${i})"><i class="fa-solid fa-trash"></i> Excluir peça</button></div></div></div>`).join('');},
+      renderServices(){const box=this.$('servicesList'); if(!this.state.services.length){box.innerHTML='<div class="empty">Nenhum serviço lançado.</div>';return;} box.innerHTML=this.state.services.map((s,i)=>`<div class="item-card"><div class="item-head"><b>Serviço ${i+1}</b><span class="item-total">${this.money(this.serviceTotal(s))}</span></div><div class="item-grid"><div class="col-2 m6"><label>Cód.</label><input value="${this.esc(s.cod)}" oninput="App.state.services[${i}].cod=this.value;App.scheduleSave()"></div><div class="col-3 m12"><label>Seção</label><select onchange="App.state.services[${i}].secao=this.value;App.scheduleSave()">${['SEM SELECAO / MANUAL','MECANICA','TAPECARIA / CAPOTARIA','FUNILARIA / PINTURA','LAVAGEM / HIGIENIZACAO','BORRACHARIA','INJECAO / ALIMENTACAO','ELETRICA','CAMBIO'].map(x=>`<option ${s.secao===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="col-7 m12"><label>Sistema / tipo veic.</label><textarea oninput="App.state.services[${i}].sistema=this.value;App.scheduleSave()">${this.esc(s.sistema)}</textarea></div><div class="col-12 m12"><label>Descrição do serviço</label><textarea oninput="App.state.services[${i}].descricao=this.value;App.scheduleSave()">${this.esc(s.descricao)}</textarea></div><div class="col-2 m6"><label>TMO</label><input value="${s.tmo}" inputmode="decimal" oninput="App.state.services[${i}].tmo=App.num(this.value);App.state.services[${i}].valorTotal=0;App.scheduleSave()"></div><div class="col-3 m6"><label>Valor hora</label><input value="${s.valorHora}" inputmode="decimal" oninput="App.state.services[${i}].valorHora=App.num(this.value);App.state.services[${i}].valorTotal=0;App.scheduleSave()"></div><div class="col-3 m6"><label>Valor total</label><input value="${s.valorTotal||0}" inputmode="decimal" oninput="App.state.services[${i}].valorTotal=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m6"><label>Desc. %</label><input value="${s.desc}" inputmode="decimal" oninput="App.state.services[${i}].desc=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m12"><label>Ação</label><button class="btn bad small" onclick="App.removeService(${i})"><i class="fa-solid fa-trash"></i> Excluir</button></div></div></div>`).join('');},
+      renderAll(){this.renderParts();this.renderServices();this.updateTotals();this.renderPreview();}, totals(){const serv=this.state.services.reduce((a,s)=>a+this.serviceTotal(s),0), pec=this.state.parts.reduce((a,p)=>a+this.partTotal(p),0), hrs=this.state.services.reduce((a,s)=>a+this.num(s.tmo),0); return{serv,pec,hrs,total:serv+pec};},
+      updateTotals(){const t=this.totals();this.$('totalServicos').textContent=this.money(t.serv);this.$('totalPecas').textContent=this.money(t.pec);this.$('totalHoras').textContent=t.hrs.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' h';this.$('totalGeral').textContent=this.money(t.total);},
+      resumoSecoes(){const map={};this.state.services.forEach(s=>{const k=s.secao||'SEM SELECAO / MANUAL';if(!map[k])map[k]={cod:[],tipo:[],horas:0,valor:0};if(s.cod)map[k].cod.push(s.cod);if(s.sistema)map[k].tipo.push(String(s.sistema).split('\n')[0]);map[k].horas+=this.num(s.tmo);map[k].valor+=this.serviceTotal(s);});return Object.entries(map).map(([sec,v])=>({sec,cod:[...new Set(v.cod)].slice(0,6).join(', ')||'-',tipo:[...new Set(v.tipo)].slice(0,2).join(' / ')||'-',horas:v.horas,valor:v.valor}));},
+      renderPreview(){const d=this.collect(),t=this.totals(),res=this.resumoSecoes(); const resumo=res.map(r=>`<tr><td>${this.esc(r.sec)}</td><td>${this.esc(r.cod)}</td><td>${this.esc(r.tipo)}</td><td>${r.horas.toFixed(2)}</td><td class="right">${this.money(r.valor)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sem mão de obra.</td></tr>'; const services=this.state.services.map(s=>`<tr><td>${this.esc(s.cod||'-')}</td><td>${this.esc(s.sistema)}</td><td>${this.esc(s.descricao)}</td><td>${this.num(s.tmo).toFixed(2)}</td><td>${this.money(s.valorHora)}</td><td>${this.num(s.desc).toFixed(1)}%</td><td class="right">${this.money(this.serviceTotal(s))}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">Sem serviços.</td></tr>'; const parts=this.state.parts.map(p=>`<tr><td>${this.esc(p.cod||'-')}</td><td>${this.esc(p.descricao)}</td><td>${this.esc(p.fornecedor)}</td><td>${this.num(p.qtd).toFixed(2)}</td><td>${this.money(p.valorUnit)}</td><td>${this.num(p.desc).toFixed(1)}%</td><td class="right">${this.money(this.partTotal(p))}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">Sem peças.</td></tr>'; const previewHtml = `<div class="pdfsheet"><div class="pdf-head"><div><h1>${this.esc(d.oficinaNome)}</h1><p>CNPJ: ${this.esc(d.oficinaCnpj)} | Tel/Whats: ${this.esc(d.oficinaTelefone)}<br>${this.esc(d.oficinaEndereco)}<br>${this.esc(d.oficinaEmail)}</p></div><div class="pdf-title">ORÇAMENTO / ORDEM DE SERVIÇO</div></div><table class="pdf-table"><tr><td><b>OS</b></td><td>${this.esc(d.os)}</td><td><b>Emissão</b></td><td>${this.brDate(d.emissao)}</td></tr><tr><td><b>Cliente</b></td><td>${this.esc(d.cliente)}</td><td><b>CPF/CNPJ</b></td><td>${this.esc(d.cpfCnpj)}</td></tr><tr><td><b>Telefone</b></td><td>${this.esc(d.telefone)}</td><td><b>Status</b></td><td>${this.esc(d.status)}</td></tr><tr><td><b>Veículo</b></td><td>${this.esc(d.veiculo)}</td><td><b>Placa</b></td><td>${this.esc(d.placa)}</td></tr><tr><td><b>Ano</b></td><td>${this.esc(d.ano)}</td><td><b>KM</b></td><td>${this.esc(d.km)}</td></tr><tr><td><b>Chassi</b></td><td>${this.esc(d.chassi)}</td><td><b>Prefixo/Patrimônio</b></td><td>${this.esc(d.prefixo)}</td></tr><tr><td><b>Fiscal Contrato</b></td><td colspan="3">${this.esc(d.fiscalContrato)}</td></tr></table><div class="pdf-bar">Defeito reclamado / queixa do cliente</div><table class="pdf-table"><tr><td>${this.nl(d.defeito||'-')}</td></tr></table><div class="pdf-bar">Diagnóstico técnico</div><table class="pdf-table"><tr><td>${this.nl(d.diagnostico||'-')}</td></tr></table><div class="pdf-bar">Resumo por seção de mão de obra</div><table class="pdf-table"><tr><th>Seção</th><th>Códigos</th><th>Tipo veículo / sistema</th><th>Horas</th><th>Valor</th></tr>${resumo}</table><div class="pdf-bar">Serviços / mão de obra</div><table class="pdf-table"><tr><th>Cód.</th><th>Sistema / tipo veic.</th><th>Descrição do serviço</th><th>TMO</th><th>Valor h</th><th>Desc.</th><th>Valor</th></tr>${services}</table><div class="pdf-bar">Peças / materiais</div><table class="pdf-table"><tr><th>Cód.</th><th>Descrição</th><th>Marca/Fornecedor</th><th>Qtd.</th><th>Valor un.</th><th>Desc.</th><th>Total</th></tr>${parts}</table><table class="pdf-table"><tr><td><b>Total serviços</b></td><td class="right">${this.money(t.serv)}</td></tr><tr><td><b>Total peças</b></td><td class="right">${this.money(t.pec)}</td></tr><tr><td><b>TOTAL GERAL</b></td><td class="right"><b>${this.money(t.total)}</b></td></tr></table><p style="text-align:center;color:#64748b;font-size:11px;font-weight:900;margin-top:20px">${this.esc((window.SOS_CONFIG.BRAND&&window.SOS_CONFIG.BRAND.assinatura)||'Powered by thIAguinho Soluções Digitais')}</p></div>`; this.$('preview').innerHTML = previewHtml; if(this.$('previewAudio')) this.$('previewAudio').innerHTML = previewHtml;},
+      setPreviewZoom(value){const z=Math.max(0.75,Math.min(2.2,Number(value)||1));this.state.previewZoom=z;document.documentElement.style.setProperty('--previewZoom',z.toFixed(2));const lbl=this.$('previewZoomLabel');if(lbl)lbl.textContent=Math.round(z*100)+'%';}, zoomPreview(delta){this.setPreviewZoom((this.state.previewZoom||1)+delta)}, setupPreviewPinchZoom(){const box=document.querySelector('#secPreview .preview-box');if(!box||box.dataset.pinchReady==='1')return;box.dataset.pinchReady='1';let startDist=0,startZoom=1;const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);box.addEventListener('touchstart',e=>{if(e.touches&&e.touches.length===2){startDist=dist(e.touches[0],e.touches[1]);startZoom=this.state.previewZoom||1;}},{passive:true});box.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length===2&&startDist>0){e.preventDefault();const ratio=dist(e.touches[0],e.touches[1])/startDist;this.setPreviewZoom(startZoom*ratio);}},{passive:false});box.addEventListener('touchend',()=>{startDist=0;},{passive:true});},
+      nl(v){return this.esc(v).replace(/\n/g,'<br>');}, brDate(v){if(!v)return'';const [y,m,d]=v.split('-');if(!y||!m||!d)return v;return `${d}/${m}/${y}`;}, esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));},
+      generatePDF(){const {jsPDF}=window.jspdf; const d=this.collect(), doc=new jsPDF('p','mm','a4'), navy=[17,24,39]; let y=14; doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text((d.oficinaNome||'S.O.S. VALÊNCIO').toUpperCase(),14,y); doc.setFont('helvetica','normal');doc.setFontSize(7);doc.text(`CNPJ: ${d.oficinaCnpj||''} | Tel/Whats: ${d.oficinaTelefone||''}`,14,y+5);doc.text(d.oficinaEndereco||'',14,y+9);doc.text(d.oficinaEmail||'',14,y+13); doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text('ORÇAMENTO / ORDEM DE SERVIÇO',118,y); doc.setDrawColor(...navy);doc.setLineWidth(1);doc.line(14,31,196,31); doc.autoTable({startY:38,theme:'grid',styles:{fontSize:7,cellPadding:2,lineColor:[203,213,225]},body:[['OS',d.os,'Emissão',this.brDate(d.emissao)],['Cliente',d.cliente,'CPF/CNPJ',d.cpfCnpj],['Telefone',d.telefone,'Status',d.status],['Veículo',d.veiculo,'Placa',d.placa],['Ano',d.ano,'KM',d.km],['Chassi',d.chassi,'Prefixo/Patrimônio',d.prefixo],['Fiscal Contrato',d.fiscalContrato,'','']]}); const bar=(txt)=>{let yy=doc.lastAutoTable.finalY+8;doc.setFillColor(...navy);doc.rect(14,yy,182,7,'F');doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text(txt,16,yy+5);doc.setTextColor(0);return yy+9;}; let sy=bar('DEFEITO RECLAMADO / QUEIXA DO CLIENTE');doc.autoTable({startY:sy,theme:'grid',styles:{fontSize:8,cellPadding:2},body:[[d.defeito||'-']]}); sy=bar('DIAGNÓSTICO TÉCNICO');doc.autoTable({startY:sy,theme:'grid',styles:{fontSize:8,cellPadding:2},body:[[d.diagnostico||'-']]}); sy=bar('RESUMO POR SEÇÃO DE MÃO DE OBRA');doc.autoTable({startY:sy,head:[['Seção','Códigos','Tipo veículo / sistema','Horas','Valor']],body:this.resumoSecoes().map(r=>[r.sec,r.cod,r.tipo,r.horas.toFixed(2),this.money(r.valor)]),theme:'grid',headStyles:{fillColor:navy},styles:{fontSize:7,cellPadding:2}}); sy=bar('SERVIÇOS / MÃO DE OBRA');doc.autoTable({startY:sy,head:[['Cód.','Sistema / tipo veic.','Descrição do serviço','TMO','Valor h','Desc.','Valor']],body:this.state.services.map(s=>[s.cod||'-',s.sistema,s.descricao,this.num(s.tmo).toFixed(2),this.money(s.valorHora),this.num(s.desc).toFixed(1)+'%',this.money(this.serviceTotal(s))]),theme:'grid',headStyles:{fillColor:navy},styles:{fontSize:6.8,cellPadding:1.8},columnStyles:{1:{cellWidth:42},2:{cellWidth:58}}}); sy=bar('PEÇAS / MATERIAIS');doc.autoTable({startY:sy,head:[['Cód.','Descrição','Marca/Fornecedor','Qtd.','Valor un.','Desc.','Total']],body:this.state.parts.map(p=>[p.cod||'-',p.descricao,p.fornecedor,this.num(p.qtd).toFixed(2),this.money(p.valorUnit),this.num(p.desc).toFixed(1)+'%',this.money(this.partTotal(p))]),theme:'grid',headStyles:{fillColor:navy},styles:{fontSize:7,cellPadding:2}}); const t=this.totals();doc.autoTable({startY:doc.lastAutoTable.finalY+8,theme:'grid',styles:{fontSize:9,fontStyle:'bold'},body:[['Total serviços',this.money(t.serv)],['Total peças',this.money(t.pec)],['TOTAL GERAL',this.money(t.total)]]}); const pages=doc.internal.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(100);doc.text(((window.SOS_CONFIG.BRAND&&window.SOS_CONFIG.BRAND.assinatura)||'Powered by thIAguinho Soluções Digitais')+` - Página ${i}/${pages}`,105,290,{align:'center'});doc.setTextColor(0);} const name=`${(window.SOS_CONFIG.PDF&&window.SOS_CONFIG.PDF.prefixoArquivo)||'Orcamento'}_${(d.placa||d.os||'novo').replace(/\W/g,'_')}.pdf`; doc.save(name); this.state.lastPdfBlob=doc.output('blob'); this.toast('PDF gerado.');},
+      async sharePDF(){if(!this.state.lastPdfBlob)this.generatePDF(); try{const d=this.collect();const file=new File([this.state.lastPdfBlob],`orcamento_${(d.placa||d.os||'novo').replace(/\W/g,'_')}.pdf`,{type:'application/pdf'}); if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Orçamento SOS Valêncio',text:this.whatsappText(),files:[file]});}else{await navigator.clipboard.writeText(this.whatsappText());this.toast('Resumo copiado. Anexe o PDF no WhatsApp.');}}catch(e){this.toast('Não foi possível compartilhar. Baixe o PDF e anexe.');}},
+      whatsappText(){const d=this.collect(),t=this.totals();return `*${d.oficinaNome||'S.O.S. VALÊNCIO'}*\n*ORÇAMENTO / ORDEM DE SERVIÇO*\n\nOS: ${d.os||'-'}\nCliente: ${d.cliente||'-'}\nVeículo: ${d.veiculo||'-'}\nPlaca: ${d.placa||'-'}\n\nTotal serviços: ${this.money(t.serv)}\nTotal peças: ${this.money(t.pec)}\n*Total geral: ${this.money(t.total)}*\n\nPDF gerado pelo sistema. Anexe o arquivo PDF nesta conversa.`;},
+      openWhatsApp(){const phone=prompt('Número WhatsApp com DDD. Exemplo: 5517999999999',(window.SOS_CONFIG.OFFICE&&window.SOS_CONFIG.OFFICE.whatsapp)||'');if(!phone)return;window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(this.whatsappText())}`,'_blank');},
+      exportJSON(){const blob=new Blob([JSON.stringify(this.collect(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`orcamento_${this.$('placa').value||this.$('os').value||'novo'}.json`;a.click();URL.revokeObjectURL(a.href);}, importJSON(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{this.apply(JSON.parse(r.result));this.saveLocal(true);}catch(e){this.toast('JSON inválido.');}};r.readAsText(f);},
+      getGroqKey(){
+        const ui=this.$('cfgKey');
+        const fromInput=ui?String(ui.value||'').trim():'';
+        const fromApi=(window.OS_API&&typeof window.OS_API.getGroqKey==='function')?String(window.OS_API.getGroqKey()||'').trim():'';
+        const fromConfig=String((window.SOS_CONFIG&&window.SOS_CONFIG.GROQ_API_KEY)||'').trim();
+        return fromInput || fromApi || fromConfig;
+      },
+      saveConfigRuntime(){window.SOS_CONFIG.GROQ_API_KEY=this.$('cfgKey').value;window.SOS_CONFIG.GROQ_TRANSCRIPTION_MODEL=this.$('cfgTranscription').value;window.SOS_CONFIG.GROQ_CHAT_MODEL=this.$('cfgChat').value;this.toast('Configuração ativa nesta sessão.');},
+      Audio:{media:null,chunks:[],recording:false,count:0,async toggle(){if(this.recording){this.media.stop();return;}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});this.chunks=[];this.media=new MediaRecorder(stream);this.media.ondataavailable=e=>{if(e.data.size)this.chunks.push(e.data);};this.media.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(this.chunks,{type:'audio/webm'});this.transcribe(blob,'gravacao.webm');};this.media.start();this.recording=true;App.$('recordBtn').classList.add('recording');App.$('recordBtn').innerHTML='<i class="fa-solid fa-stop"></i> Parar';App.toast('Gravando...');}catch(e){App.toast('Microfone negado ou indisponível.');}},async upload(input){const f=input.files&&input.files[0];if(f)await this.transcribe(f,f.name);input.value='';},appendTranscript(text){this.count++;const old=App.$('audioText').value.trim();const bloco=`[ÁUDIO ${this.count}] ${text}`;App.$('audioText').value=old?old+'\n\n'+bloco:bloco;},async transcribe(blob,name){this.recording=false;App.$('recordBtn').classList.remove('recording');App.$('recordBtn').innerHTML='<i class="fa-solid fa-microphone"></i> Gravar';const key=App.getGroqKey();if(!key||key.includes('COLE_')){App.toast('Configure a chave Groq.');return;}App.$('aiReturn').textContent='Enviando áudio para Groq...';const fd=new FormData();fd.append('file',blob,name);fd.append('model',window.SOS_CONFIG.GROQ_TRANSCRIPTION_MODEL||'whisper-large-v3-turbo');fd.append('language','pt');fd.append('response_format','json');try{const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:`Bearer ${key}`},body:fd});const data=await res.json();if(!res.ok)throw new Error(data.error?.message||'Erro na transcrição');const texto=(data.text||'').trim();if(!texto){App.toast('Transcrição veio vazia.');return;}this.appendTranscript(texto);App.$('aiReturn').textContent='Áudio transcrito. Aplicando este áudio ao orçamento...';await App.AI.processText(texto,{fromAudio:true});}catch(e){App.$('aiReturn').textContent='Falha: '+e.message;App.toast('Falha na transcrição Groq.');}}},
+      AI:{
+        async processText(textOverride=null,opts={}){const text=String(textOverride!==null?textOverride:App.$('audioText').value).trim();if(!text){App.toast('Digite ou grave um comando.');return;}const key=App.getGroqKey();if(!key||key.includes('COLE_')){App.$('aiReturn').textContent='Sem chave Groq. Aplicando parser local.';this.applyData(this.localParse(text),text,opts);return;}App.$('aiReturn').textContent='IA analisando texto...';const schema=`Retorne SOMENTE JSON válido, sem markdown, no formato: {"campos":{"cliente":"","cpfCnpj":"","telefone":"","veiculo":"","placa":"","ano":"","km":"","chassi":"","prefixo":"","fiscalContrato":"","defeito":"","diagnostico":""},"servicos":[{"cod":"","secao":"MECANICA","sistema":"","descricao":"","tmo":0,"valorHora":0,"valorTotal":0,"desc":0}],"pecas":[{"cod":"","descricao":"","fornecedor":"","qtd":1,"valorUnit":0,"desc":0}]}. REGRAS ABSOLUTAS: 1) Seja fiel ao texto. Não invente cliente, veículo, peça, serviço ou valor. 2) Serviço/mão de obra deve ser extraído quando o texto disser claramente um trabalho ou quando disser literalmente serviço/mão de obra com valor. 3) Se falar "serviço 500", retorne serviço com descricao "SERVIÇO", valorTotal 500, tmo 0 e valorHora 0. 4) Peça/material/produto deve ser extraído quando o texto citar item físico com quantidade e valor. 5) Tudo em MAIÚSCULO. 6) Quando o texto disser "dois discos de freio 640", "2 discos de freio 640", "par de discos 640", considere o valor falado como VALOR TOTAL DO CONJUNTO. Exemplo: "dois discos de freio 640" retorna qtd 2 e valorUnit 320. Exemplo: "dois discos de freio 640 cada" retorna qtd 2 e valorUnit 640. 7) Só considere unitário quando disser cada, unitário, por unidade ou por peça. 8) Não use dados de exemplo nem orçamento anterior. 9) Em novo áudio, devolva apenas o que apareceu neste texto.`;try{const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({model:window.SOS_CONFIG.GROQ_CHAT_MODEL||'openai/gpt-oss-20b',temperature:0,messages:[{role:'system',content:'Você é um extrator fiel de orçamento automotivo. Extraia somente o que foi dito. Não invente.'},{role:'user',content:schema+'\nTEXTO REAL DO ÁUDIO/COMANDO:\n'+text}]})});const data=await res.json();if(!res.ok)throw new Error(data.error?.message||'Erro na IA');let content=data.choices?.[0]?.message?.content||'';content=content.replace(/```json|```/g,'').trim();let json=JSON.parse(content);const local=this.localParse(text);json.campos=Object.assign({},local.campos||{},json.campos||{});if((!json.pecas||!json.pecas.length)&&local.pecas&&local.pecas.length)json.pecas=local.pecas;if((!json.servicos||!json.servicos.length)&&local.servicos&&local.servicos.length)json.servicos=local.servicos;App.$('aiReturn').textContent=JSON.stringify(json,null,2);this.applyData(json,text,opts);App.toast('Aplicado ao orçamento.');}catch(e){App.$('aiReturn').textContent='IA falhou: '+e.message+'\nAplicando parser local.';this.applyData(this.localParse(text),text,opts);}},
+        plain(v){return App.normText(v||'',true).normalize('NFD').replace(/[\u0300-\u036f]/g,'');}, badDesc(desc){const d=this.plain(desc);return !d||/^[0-9.,]+$/.test(d)||['SERVICO','MAO DE OBRA','PECA','ITEM','MECANICA','MATERIAL','PRODUTO','ORCAMENTO'].includes(d)||d.length<3;}, badPartDesc(desc){const d=this.plain(desc);return this.badDesc(desc)||/\b(SERVICO|MAO\s+DE\s+OBRA|MAO|OBRA)\b/.test(d);},
+        words(desc){return this.plain(desc).split(/[^A-Z0-9]+/).filter(w=>w.length>2&&!['PARA','COMO','LADO','VALOR','TOTAL','SERVICO','PECA','MAO','OBRA','COM','SEM','UMA','UM','DOIS','DUAS','TRES','QUATRO'].includes(w));},
+        trailingMoney(trecho){const m=String(trecho||'').match(/(?:R\$\s*)?(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:reais?)?\s*$/i);return m?App.num(m[1]):0;},
+        numberWordToNumber(txt){const s=this.plain(txt);if(/\b(UM|UMA)\b/.test(s))return 1;if(/\b(DOIS|DUAS|PAR)\b/.test(s))return 2;if(/\b(TRES|TRÊS)\b/.test(s))return 3;if(/\b(QUATRO)\b/.test(s))return 4;if(/\b(CINCO)\b/.test(s))return 5;const m=s.match(/\b(\d+)\b/);return m?App.num(m[1]):1;},
+        splitText(text){return String(text||'').split(/[;\n]|,(?!\s*(?:R\$)?\s*\d)/).map(x=>x.trim()).filter(Boolean);},
+        partSegment(desc,source){const chunks=this.splitText(source), words=this.words(desc);if(!chunks.length||!words.length)return String(source||'');let best=chunks[0],bestHits=-1;chunks.forEach(chunk=>{const pc=this.plain(chunk);const hits=words.filter(w=>pc.includes(w)).length;if(hits>bestHits){bestHits=hits;best=chunk;}});return best||String(source||'');},
+        normalizePartItem(item,source){const p=Object.assign({},item||{});const desc=String(p.descricao||'').trim();const trecho=this.partSegment(desc,source);let qtd=App.num(p.qtd)||this.numberWordToNumber(trecho)||1;let valorAtual=App.num(p.valorUnit??p.valor_unitario??p.valor??0)||0;const falouCada=/\b(cada|cada\s+um|cada\s+uma|unit[aá]rio|unit[aá]ria|por\s+unidade|por\s+pe[cç]a|valor\s*(unit[aá]rio|un))\b/i.test(trecho);const valorFalado=this.trailingMoney(trecho)||valorAtual;p.qtd=qtd;p.valorUnit=(valorFalado>0&&qtd>1&&!falouCada)?valorFalado/qtd:valorFalado;return p;},
+        normalizeServiceItem(item,source){const s=Object.assign({},item||{});let desc=String(s.descricao||'').trim();let valor=App.num(s.valorTotal??s.valor_total??s.valor??0);const sourceText=String(source||'');if(!valor){const m=sourceText.match(/\bservi[cç]o(?:\s+de)?\s+([^,.;\n]*?)\s*,?\s*(?:R\$)?\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:reais?)?/i);if(m){desc=m[1]?'SERVIÇO DE '+m[1]:'SERVIÇO';valor=App.num(m[2]);}}if(!desc&&valor>0)desc='SERVIÇO';s.descricao=App.normText(desc||'SERVIÇO',true);s.valorTotal=valor;s.tmo=0;s.valorHora=0;return s;},
+        mergeSupplement(json,local){json=json||{};json.campos=Object.assign({},local.campos||{},json.campos||{});json.servicos=json.servicos||[];json.pecas=json.pecas||[];const pk=p=>App.cleanKey(p.descricao||'');(local.pecas||[]).forEach(p=>{if(p.descricao&&!json.pecas.some(x=>pk(x)===pk(p)))json.pecas.push(p);});const sk=s=>App.cleanKey(s.descricao||'');(local.servicos||[]).forEach(s=>{if(s.descricao&&!json.servicos.some(x=>sk(x)===sk(s)))json.servicos.push(s);});return json;},
+        localParse(text){const out={campos:{},servicos:[],pecas:[]};let src=String(text||'');src=src.replace(/\s+e\s+(servi[cç]o)/gi,', $1');const servRe=/\bservi[cç]o(?:\s+de)?\s+([^,.;\n]*?)\s*,?\s*(?:R\$)?\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:reais?)?/gi;src=src.replace(servRe,(full,desc,val)=>{const d=String(desc||'').trim();const v=App.num(val);if(v>0){out.servicos.push({descricao:d?'SERVIÇO DE '+d:'SERVIÇO',secao:'MECANICA',sistema:'MECANICA E ELETRICA GERAL EM VEICULOS PEQUENOS E MEDIOS\nTipo: CARRO',tmo:0,valorHora:0,valorTotal:v,desc:0});}return ',';});const partRe=/(?:^|[,;\n])\s*([^,;\n]*?[A-Za-zÀ-ú][^,;\n]*?)\s*,?\s*(?:R\$)?\s*(\d{1,6}(?:[.,]\d{1,2})?)\s*(?:reais?)?(?=\s*(?:,|;|\n|\.|$))/gi;let m;while((m=partRe.exec(src))){const rawDesc=String(m[1]||'').trim();const valor=App.num(m[2]);if(!rawDesc||!valor)continue;let qtd=this.numberWordToNumber(rawDesc);let desc=rawDesc.replace(/\b(um|uma|dois|duas|tr[eê]s|quatro|cinco|\d+)\b/i,'').replace(/\b(cada|cada um|cada uma|unit[aá]rio|unit[aá]ria|por unidade|por pe[cç]a)\b/ig,'').trim();if(desc&&!this.badPartDesc(desc)){const falouCada=/\b(cada|unit[aá]rio|por unidade|por pe[cç]a)\b/i.test(rawDesc);out.pecas.push({descricao:desc,qtd:qtd,valorUnit:(qtd>1&&!falouCada)?valor/qtd:valor,desc:0});}}return out;},
+        applyData(json,sourceText,opts={}){json=json||{};json.campos=json.campos||{};Object.entries(json.campos).forEach(([k,v])=>{if(v===undefined||v===null||String(v).trim()==='')return;const idMap={cpfCnpj:'cpfCnpj',fiscalContrato:'fiscalContrato'};const id=idMap[k]||k;if(App.$(id))App.$(id).value=App.normText(v,true);});(json.pecas||[]).forEach(raw=>{const p=this.normalizePartItem(raw,sourceText);const desc=String(p.descricao||'').trim();if(this.badPartDesc(desc))return;App.addPart(p);});const seenServices=new Set();(json.servicos||[]).forEach(raw=>{const s=this.normalizeServiceItem(raw,sourceText);const desc=String(s.descricao||'').trim();if(this.badDesc(desc)&&App.num(s.valorTotal||0)<=0)return;const key=App.serviceKey(s)+'|'+App.num(s.valorTotal||0)+'|'+App.num(s.valorHora||0)+'|'+App.num(s.tmo||0);if(seenServices.has(key))return;seenServices.add(key);App.addService(s);});App.renderAll();App.saveLocal(false);}
+      }
+    };
+    window.addEventListener('DOMContentLoaded',()=>App.init());
+  </script>
+  <script src="js/comparador.js?v=1.0.0"></script>
+</body>
+</html>

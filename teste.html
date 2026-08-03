@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rasther Alternativo - Versailles 2.0 EFI EEC-IV</title>
+
+<style>
+:root{
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#dbe3ef;
+  --primary:#0ea5e9;
+  --primary2:#0369a1;
+  --good:#16a34a;
+  --warn:#f59e0b;
+  --bad:#dc2626;
+  --soft:#eef6ff;
+  --input:#ffffff;
+  --shadow:0 8px 25px rgba(15,23,42,.12);
+}
+
+[data-theme="dark"]{
+  --bg:#08111f;
+  --card:#111827;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --line:#334155;
+  --primary:#38bdf8;
+  --primary2:#0ea5e9;
+  --good:#22c55e;
+  --warn:#facc15;
+  --bad:#ef4444;
+  --soft:#102236;
+  --input:#020617;
+  --shadow:0 8px 25px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial, Helvetica, sans-serif;
+  padding-bottom:88px;
+}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+}
+
+.top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  background:var(--primary);
+  color:white;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+}
+
+h1{
+  margin:0;
+  font-size:16px;
+  line-height:1.15;
+}
+
+.sub{
+  margin:2px 0 0;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.theme-btn{
+  margin-left:auto;
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:14px;
+  background:var(--soft);
+  color:var(--text);
+  font-size:20px;
+  cursor:pointer;
+}
+
+main{
+  max-width:760px;
+  margin:0 auto;
+  padding:12px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:var(--shadow);
+}
+
+.step-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:12px;
+}
+
+.step-n{
+  min-width:32px;
+  height:32px;
+  border-radius:11px;
+  background:var(--primary);
+  color:white;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+}
+
+h2{
+  font-size:17px;
+  margin:0;
+}
+
+label{
+  display:block;
+  font-size:14px;
+  font-weight:700;
+  margin:12px 0 6px;
+}
+
+input,select,textarea{
+  width:100%;
+  min-height:48px;
+  border:1px solid var(--line);
+  background:var(--input);
+  color:var(--text);
+  border-radius:14px;
+  padding:12px;
+  font-size:16px;
+}
+
+textarea{
+  min-height:82px;
+  resize:vertical;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+@media(max-width:460px){
+  .grid{grid-template-columns:1fr}
+}
+
+.choice{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+}
+
+.choice button{
+  min-height:54px;
+  border:1px solid var(--line);
+  background:var(--input);
+  color:var(--text);
+  border-radius:15px;
+  font-size:15px;
+  font-weight:800;
+  text-align:left;
+  padding:12px;
+  cursor:pointer;
+}
+
+.choice button.active{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:white;
+}
+
+.hint{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.35;
+  margin-top:7px;
+}
+
+.box{
+  border-radius:15px;
+  padding:12px;
+  margin:10px 0;
+  line-height:1.4;
+  font-size:14px;
+}
+
+.info{
+  background:rgba(14,165,233,.12);
+  border:1px solid rgba(14,165,233,.35);
+}
+
+.warn{
+  background:rgba(245,158,11,.13);
+  border:1px solid rgba(245,158,11,.45);
+}
+
+.danger{
+  background:rgba(220,38,38,.13);
+  border:1px solid rgba(220,38,38,.45);
+}
+
+.good{
+  background:rgba(22,163,74,.13);
+  border:1px solid rgba(22,163,74,.45);
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  margin:2px 4px 2px 0;
+}
+
+.b1{background:rgba(14,165,233,.17);color:var(--primary2)}
+.b2{background:rgba(245,158,11,.18);color:#b45309}
+.b3{background:rgba(22,163,74,.18);color:var(--good)}
+.b4{background:rgba(220,38,38,.18);color:var(--bad)}
+
+[data-theme="dark"] .b1{color:#7dd3fc}
+[data-theme="dark"] .b2{color:#fde68a}
+[data-theme="dark"] .b3{color:#86efac}
+[data-theme="dark"] .b4{color:#fecaca}
+
+.score{
+  margin:12px 0;
+}
+
+.score-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:14px;
+  font-weight:900;
+}
+
+.bar{
+  height:9px;
+  background:var(--line);
+  border-radius:999px;
+  margin-top:6px;
+  overflow:hidden;
+}
+
+.fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+}
+
+ul{
+  padding-left:20px;
+}
+
+li{
+  margin:7px 0;
+}
+
+.bottom{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:30;
+  background:var(--card);
+  border-top:1px solid var(--line);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-columns:1fr 64px;
+  gap:10px;
+  box-shadow:0 -8px 22px rgba(15,23,42,.18);
+}
+
+.main-btn{
+  min-height:56px;
+  border:0;
+  border-radius:18px;
+  background:var(--primary);
+  color:white;
+  font-size:17px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.icon-btn{
+  min-height:56px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--input);
+  color:var(--text);
+  font-size:22px;
+  cursor:pointer;
+}
+
+.small{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.hidden{
+  display:none;
+}
+
+.ref-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  margin-top:8px;
+}
+
+.ref-table th,.ref-table td{
+  border:1px solid var(--line);
+  padding:7px;
+  text-align:center;
+}
+
+.ref-table th{
+  background:var(--soft);
+}
+
+details{
+  margin-top:8px;
+}
+
+summary{
+  cursor:pointer;
+  font-weight:900;
+  color:var(--primary2);
+}
+
+@media print{
+  body{padding-bottom:0;background:white;color:black}
+  header,.bottom,.theme-btn{display:none}
+  .card{box-shadow:none;border:1px solid #999}
+}
+</style>
+</head>
+
+<body data-theme="light">
+
+<header>
+  <div class="top">
+    <div class="logo">IA</div>
+    <div>
+      <h1>Rasther Alternativo Versailles 2.0 EFI</h1>
+      <p class="sub">FIC EEC-IV • 4 bicos • diagnóstico por evidência</p>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()" title="Claro/Escuro">☀️</button>
+  </div>
+</header>
+
+<main>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">1</div>
+    <h2>Defeito principal</h2>
+  </div>
+
+  <div class="box info">
+    <span class="badge b1">DADO REAL</span>
+    Versailles 2.0 1994 EFI multiponto: com o plug do corpo/TBI ligado não pega; desligando o plug pega.
+  </div>
+
+  <label>Qual plug você desliga para o motor pegar?</label>
+  <div class="choice" data-name="plug">
+    <button onclick="pick('plug','tps',this)">Só TPS / sensor da borboleta</button>
+    <button onclick="pick('plug','iac',this)">Só atuador/corretor de lenta</button>
+    <button onclick="pick('plug','geral',this)">Plug geral do corpo/TBI</button>
+    <button onclick="pick('plug','naosei',this)">Não sei identificar</button>
+  </div>
+
+  <label>Teste separador: com apenas o TPS desligado</label>
+  <select id="tpsOff">
+    <option value="">Não testado</option>
+    <option value="pega">Pega</option>
+    <option value="naopega">Não pega</option>
+    <option value="ameaca">Só ameaça</option>
+  </select>
+
+  <label>Teste separador: com apenas o atuador de lenta desligado</label>
+  <select id="iacOff">
+    <option value="">Não testado</option>
+    <option value="pega">Pega</option>
+    <option value="naopega">Não pega</option>
+    <option value="ameaca">Só ameaça</option>
+  </select>
+
+  <p class="hint">Esse é o primeiro teste que separa TPS de atuador. Sem isso, plug geral só indica “circuito do corpo”, não a peça culpada.</p>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">2</div>
+    <h2>5 V, terra de sensores e chicote</h2>
+  </div>
+
+  <div class="box warn">
+    Referência de pinagem pública: pino 26 é positivo MAP/TPS, pino 46 é negativo dos sensores e pino 47 é sinal do TPS.
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>VREF com plug TBI desligado</label>
+      <input id="vrefOff" type="number" step="0.01" placeholder="Ex: 4.98">
+    </div>
+    <div>
+      <label>VREF com plug TBI ligado</label>
+      <input id="vrefOn" type="number" step="0.01" placeholder="Ex: 4.96 ou 0.4">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Terra sensores: pino 46 até negativo bateria</label>
+      <input id="terraSensores" type="number" step="0.01" placeholder="Queda V. Ex: 0.03">
+    </div>
+    <div>
+      <label>Ao conectar TBI o sistema apaga/falha?</label>
+      <select id="sistemaCai">
+        <option value="">Não testado</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não</option>
+      </select>
+    </div>
+  </div>
+
+  <p class="hint">Se a linha de 5 V cai ao conectar o corpo/TBI, pare de trocar peça e procure curto no TPS, atuador, MAP, chicote ou conector.</p>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">3</div>
+    <h2>TPS — valores reais</h2>
+  </div>
+
+  <div class="box info">
+    Referência FIC EEC-IV EFI multiponto: fechado 0,5 a 1,0 V; meio 2 a 3 V; aberto total 4 a 5 V.
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>TPS fechado</label>
+      <input id="tpsFechado" type="number" step="0.01" placeholder="Ex: 0.72">
+    </div>
+    <div>
+      <label>TPS meio curso</label>
+      <input id="tpsMeio" type="number" step="0.01" placeholder="Ex: 2.50">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>TPS aberto total</label>
+      <input id="tpsAberto" type="number" step="0.01" placeholder="Ex: 4.55">
+    </div>
+    <div>
+      <label>Sinal sobe liso?</label>
+      <select id="tpsLiso">
+        <option value="">Não testado</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não, falha/pula/trava</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Pulso nos bicos com plug TBI ligado</label>
+  <select id="pulsoLigado">
+    <option value="">Não testado</option>
+    <option value="tem">Tem pulso</option>
+    <option value="naotem">Não tem pulso</option>
+    <option value="fraco">Pulso estranho/fraco</option>
+  </select>
+
+  <label>Pulso nos bicos com plug TBI desligado</label>
+  <select id="pulsoDesligado">
+    <option value="">Não testado</option>
+    <option value="tem">Tem pulso</option>
+    <option value="naotem">Não tem pulso</option>
+    <option value="fraco">Pulso estranho/fraco</option>
+  </select>
+
+  <p class="hint">No multiponto, pino 58 comanda bicos 1/4 e pino 59 comanda bicos 2/3.</p>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">4</div>
+    <h2>Atuador de lenta e ar de partida</h2>
+  </div>
+
+  <label>Com plug TBI ligado, ele pega se abrir levemente o acelerador?</label>
+  <select id="pegaPedal">
+    <option value="">Não testado</option>
+    <option value="sim">Sim</option>
+    <option value="nao">Não</option>
+    <option value="ameaca">Só ameaça</option>
+  </select>
+
+  <label>Corpo de borboleta sujo/travando?</label>
+  <select id="borboleta">
+    <option value="">Não testado</option>
+    <option value="sim">Sim</option>
+    <option value="nao">Não</option>
+  </select>
+
+  <label>Atuador esquenta muito, dá curto ou derruba sistema ao ligar?</label>
+  <select id="iacCurto">
+    <option value="">Não testado</option>
+    <option value="sim">Sim</option>
+    <option value="nao">Não</option>
+  </select>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">5</div>
+    <h2>Temperatura da injeção</h2>
+  </div>
+
+  <div class="box info">
+    Tensão referência água/ar: 10°C 3,5 V • 20°C 3,1 V • 30°C 2,6 V • 40°C 2,1 V • 80°C 0,8 V • 100°C 0,5 V.
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Temperatura ambiente / motor frio</label>
+      <input id="tempAmb" type="number" step="1" placeholder="Ex: 25">
+    </div>
+    <div>
+      <label>Tensão medida no sensor</label>
+      <input id="tempVolt" type="number" step="0.01" placeholder="Ex: 2.85">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Resistência do sensor fora do chicote</label>
+      <input id="tempOhm" type="number" step="1" placeholder="Ex: 3000">
+    </div>
+    <div>
+      <label>Conector/chicote está bom?</label>
+      <select id="conectorTemp">
+        <option value="">Não testado</option>
+        <option value="bom">Bom</option>
+        <option value="ruim">Ruim/oxidado/frouxo</option>
+      </select>
+    </div>
+  </div>
+
+  <details>
+    <summary>Tabela rápida de resistência</summary>
+    <table class="ref-table">
+      <tr><th>°C</th><td>10</td><td>20</td><td>30</td><td>40</td><td>50</td><td>60</td><td>70</td><td>80</td><td>90</td><td>100</td></tr>
+      <tr><th>Ω</th><td>5870</td><td>3730</td><td>2430</td><td>1620</td><td>1100</td><td>770</td><td>540</td><td>380</td><td>280</td><td>210</td></tr>
+    </table>
+  </details>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">6</div>
+    <h2>Combustível, regulador e bicos</h2>
+  </div>
+
+  <div class="box warn">
+    Dado real do caso: regulador antigo estava estourado, bomba foi trocada e um bico gotejava antes da limpeza. Então pressão e estanqueidade continuam obrigatórias.
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Pressão em marcha lenta</label>
+      <input id="pressao" type="number" step="0.1" placeholder="2.8 a 3.2 bar">
+    </div>
+    <div>
+      <label>Pressão cai rápido após desligar?</label>
+      <select id="pressaoCai">
+        <option value="">Não testado</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Tem combustível na mangueira de vácuo do regulador?</label>
+  <select id="combVacuo">
+    <option value="">Não testado</option>
+    <option value="sim">Sim</option>
+    <option value="nao">Não</option>
+  </select>
+
+  <label>Velas após tentativa com plug TBI ligado</label>
+  <select id="velas">
+    <option value="">Não testado</option>
+    <option value="todasMolhadas">Todas molhadas</option>
+    <option value="umaMolhada">Uma ou duas molhadas</option>
+    <option value="secas">Secas</option>
+    <option value="pretas">Pretas/carbonizadas</option>
+    <option value="normal">Normais</option>
+  </select>
+</section>
+
+<section class="card">
+  <div class="step-title">
+    <div class="step-n">7</div>
+    <h2>Ignição, rotação e segurança</h2>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Centelha na partida</label>
+      <select id="centelha">
+        <option value="">Não testado</option>
+        <option value="forte">Forte azulada</option>
+        <option value="fraca">Fraca/amarelada</option>
+        <option value="ausente">Ausente</option>
+      </select>
+    </div>
+    <div>
+      <label>Motor de arranque</label>
+      <select id="arranque">
+        <option value="">Não testado</option>
+        <option value="normal">Gira normal</option>
+        <option value="pesado">Gira pesado</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Observações / códigos de falha</label>
+  <textarea id="obs" placeholder="Ex: cheiro forte, chicote mexido, código TPS, MAP, temperatura, bicos, etc."></textarea>
+
+  <div class="box danger">
+    Se houver vazamento de combustível, curto, fumaça, cheiro muito forte ou óleo contaminado por combustível, não insistir na partida.
+  </div>
+</section>
+
+<section class="card" id="resultado">
+  <div class="step-title">
+    <div class="step-n">✓</div>
+    <h2>Resultado</h2>
+  </div>
+  <div class="box info">Preencha os testes e toque em <strong>Analisar</strong>.</div>
+</section>
+
+</main>
+
+<div class="bottom">
+  <button class="main-btn" onclick="analisar()">Analisar</button>
+  <button class="icon-btn" onclick="window.print()">🖨️</button>
+</div>
+
+<script>
+const state = {};
+const TENS_TEMP = [
+  [10,3.5],[20,3.1],[30,2.6],[40,2.1],[50,1.7],
+  [60,1.3],[70,1.0],[80,0.8],[90,0.6],[100,0.5]
+];
+
+const OHM_TEMP = [
+  [10,5870],[20,3730],[30,2430],[40,1620],[50,1100],
+  [60,770],[70,540],[80,380],[90,280],[100,210]
+];
+
+function $(id){return document.getElementById(id);}
+function num(id){
+  const v = $(id).value;
+  if(v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function val(id){return $(id).value;}
+function text(id){return ($(id).value || "").trim();}
+
+function pick(name,value,btn){
+  state[name]=value;
+  document.querySelectorAll(`[data-name="${name}"] button`).forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  save();
+}
+
+function nearest(table,temp){
+  let best = table[0];
+  for(const row of table){
+    if(Math.abs(row[0]-temp) < Math.abs(best[0]-temp)) best = row;
+  }
+  return best;
+}
+
+function add(h,key,pts,e){
+  h[key].score += pts;
+  if(e) h[key].evid.push(e);
+}
+
+function certeza(s){
+  if(s>=80) return "alta";
+  if(s>=50) return "média";
+  if(s>0) return "baixa";
+  return "sem evidência";
+}
+
+function color(s){
+  if(s>=80) return "var(--bad)";
+  if(s>=50) return "var(--warn)";
+  if(s>=25) return "var(--primary)";
+  return "var(--good)";
+}
+
+function analisar(){
+  const d = {
+    plug:state.plug || "",
+    tpsOff:val("tpsOff"),
+    iacOff:val("iacOff"),
+    vrefOff:num("vrefOff"),
+    vrefOn:num("vrefOn"),
+    terraSensores:num("terraSensores"),
+    sistemaCai:val("sistemaCai"),
+    tpsFechado:num("tpsFechado"),
+    tpsMeio:num("tpsMeio"),
+    tpsAberto:num("tpsAberto"),
+    tpsLiso:val("tpsLiso"),
+    pulsoLigado:val("pulsoLigado"),
+    pulsoDesligado:val("pulsoDesligado"),
+    pegaPedal:val("pegaPedal"),
+    borboleta:val("borboleta"),
+    iacCurto:val("iacCurto"),
+    tempAmb:num("tempAmb"),
+    tempVolt:num("tempVolt"),
+    tempOhm:num("tempOhm"),
+    conectorTemp:val("conectorTemp"),
+    pressao:num("pressao"),
+    pressaoCai:val("pressaoCai"),
+    combVacuo:val("combVacuo"),
+    velas:val("velas"),
+    centelha:val("centelha"),
+    arranque:val("arranque"),
+    obs:text("obs")
+  };
+
+  const h = {
+    tps:{
+      nome:"TPS / sinal da borboleta / chicote do TPS",
+      score:20,
+      evid:["Defeito muda quando o circuito do corpo de borboleta é desligado."],
+      testes:[
+        "Confirmar TPS fechado entre 0,5 e 1,0 V.",
+        "Confirmar TPS meio curso entre 2 e 3 V.",
+        "Confirmar TPS aberto total entre 4 e 5 V.",
+        "Conferir se o sinal sobe liso, sem queda ou travamento.",
+        "Medir 5 V, terra de sensores e sinal antes de condenar TPS novo."
+      ]
+    },
+    vref:{
+      nome:"Queda da linha 5 V / terra dos sensores / curto no chicote",
+      score:15,
+      evid:["Plug do corpo/TBI interfere na partida."],
+      testes:[
+        "Medir VREF com plug TBI desligado e ligado.",
+        "Se 5 V cai ao conectar, isolar TPS, atuador e MAP.",
+        "Inspecionar pinos, zinabre, fio esmagado e emendas.",
+        "Medir terra de sensores pino 46 contra negativo da bateria."
+      ]
+    },
+    iac:{
+      nome:"Atuador/corretor de lenta ou falta de ar de partida",
+      score:8,
+      evid:["Corpo de borboleta também envolve controle de marcha lenta."],
+      testes:[
+        "Testar partida com apenas atuador de lenta desligado.",
+        "Testar partida com pedal levemente aberto.",
+        "Verificar borboleta suja, fechada demais ou travando.",
+        "Verificar se o atuador esquenta muito ou derruba a alimentação."
+      ]
+    },
+    temp:{
+      nome:"Leitura falsa do sensor de temperatura da injeção",
+      score:5,
+      evid:["Sensor foi trocado, mas chicote/conector ainda precisa ser provado."],
+      testes:[
+        "Comparar tensão medida com tabela por temperatura.",
+        "Perto de 20°C deve estar perto de 3,1 V; 30°C perto de 2,6 V.",
+        "5 V indica circuito aberto; 0 V indica curto para terra.",
+        "Medir resistência do sensor fora do chicote."
+      ]
+    },
+    combustivel:{
+      nome:"Excesso de combustível, pressão incorreta ou bico ainda vazando",
+      score:18,
+      evid:["Regulador antigo estourado e um bico gotejava antes da limpeza."],
+      testes:[
+        "Medir pressão: referência 2,8 a 3,2 bar em marcha lenta.",
+        "Verificar combustível na mangueira de vácuo do regulador.",
+        "Verificar queda rápida de pressão após desligar.",
+        "Comparar velas: todas molhadas indica excesso geral; uma molhada indica bico específico."
+      ]
+    },
+    ignicao:{
+      nome:"Ignição fraca/ausente ou sinal de rotação",
+      score:0,
+      evid:[],
+      testes:[
+        "Confirmar centelha forte e azulada.",
+        "Se não há pulso nos bicos e não há centelha, investigar rotação/PMS/distribuidor/TFI.",
+        "Confirmar tensão de bateria durante partida."
+      ]
+    },
+    modulo:{
+      nome:"UCE EEC-IV com falha de comando",
+      score:0,
+      evid:[],
+      testes:[
+        "Só avaliar central depois de VREF, terra, TPS, atuador, temperatura, pressão, bicos, ignição e chicote.",
+        "Confirmar alimentação da UCE nos pinos 37/57 e aterramentos 40/60 sob carga.",
+        "Confirmar se o comando dos bicos permanece errado com chicote e sensores testados."
+      ]
+    }
+  };
+
+  if(d.plug==="tps") add(h,"tps",55,"Motor pega quando desliga especificamente o TPS.");
+  if(d.plug==="iac") add(h,"iac",55,"Motor pega quando desliga especificamente o atuador de lenta.");
+  if(d.plug==="geral" || d.plug==="naosei"){
+    add(h,"vref",20,"Ainda não foi separado TPS de atuador; plug geral só acusa o circuito do corpo.");
+    add(h,"tps",10,"TPS ainda precisa ser isolado.");
+    add(h,"iac",10,"Atuador de lenta ainda precisa ser isolado.");
+  }
+
+  if(d.tpsOff==="pega") add(h,"tps",70,"Com apenas TPS desligado, o motor pega.");
+  if(d.tpsOff==="naopega") h.tps.score -= 15;
+  if(d.iacOff==="pega") add(h,"iac",70,"Com apenas atuador de lenta desligado, o motor pega.");
+  if(d.iacOff==="naopega") h.iac.score -= 10;
+
+  if(d.vrefOff!==null && d.vrefOn!==null){
+    if(d.vrefOff>=4.7 && d.vrefOn<4.5){
+      add(h,"vref",80,`VREF cai de ${d.vrefOff} V para ${d.vrefOn} V ao conectar o TBI.`);
+      add(h,"tps",25,"TPS/chicote pode estar derrubando a referência de 5 V.");
+    }
+    if(d.vrefOff<4.5) add(h,"vref",55,`VREF já está baixa com plug desligado: ${d.vrefOff} V.`);
+    if(d.vrefOff>=4.7 && d.vrefOn>=4.7) h.vref.score -= 18;
+  }
+
+  if(d.terraSensores!==null && d.terraSensores>0.15){
+    add(h,"vref",45,`Queda alta no terra dos sensores: ${d.terraSensores} V.`);
+  }
+
+  if(d.sistemaCai==="sim") add(h,"vref",45,"Sistema muda/apaga/falha ao conectar o plug do TBI.");
+
+  if(d.tpsFechado!==null){
+    if(d.tpsFechado>3.5) add(h,"tps",90,`TPS fechado absurdamente alto: ${d.tpsFechado} V.`);
+    else if(d.tpsFechado>1.0) add(h,"tps",55,`TPS fechado acima de 1,0 V: ${d.tpsFechado} V.`);
+    else if(d.tpsFechado<0.5) add(h,"tps",40,`TPS fechado abaixo de 0,5 V: ${d.tpsFechado} V.`);
+    else h.tps.score -= 12;
+  }
+
+  if(d.tpsMeio!==null){
+    if(d.tpsMeio<2 || d.tpsMeio>3) add(h,"tps",25,`TPS meio curso fora de 2 a 3 V: ${d.tpsMeio} V.`);
+  }
+
+  if(d.tpsAberto!==null){
+    if(d.tpsAberto<4 || d.tpsAberto>5) add(h,"tps",35,`TPS aberto total fora de 4 a 5 V: ${d.tpsAberto} V.`);
+  }
+
+  if(d.tpsFechado!==null && d.tpsAberto!==null && d.tpsAberto<=d.tpsFechado){
+    add(h,"tps",70,"TPS não aumenta ao abrir a borboleta.");
+  }
+
+  if(d.tpsLiso==="nao") add(h,"tps",55,"Sinal do TPS pula, falha ou trava.");
+  if(d.tpsLiso==="sim" && d.tpsFechado>=0.5 && d.tpsFechado<=1.0 && d.tpsAberto>=4 && d.tpsAberto<=5) h.tps.score -= 18;
+
+  if(d.pulsoLigado==="naotem" && d.pulsoDesligado==="tem"){
+    add(h,"tps",80,"Não há pulso nos bicos com plug ligado, mas há pulso com TBI desligado.");
+    add(h,"vref",45,"Circuito do corpo/TBI interfere diretamente no comando de injeção.");
+  }
+  if(d.pulsoLigado==="naotem" && d.pulsoDesligado==="naotem"){
+    add(h,"ignicao",65,"Não há pulso nos bicos em nenhuma condição.");
+  }
+
+  if(d.pegaPedal==="sim") add(h,"iac",55,"Pega com pedal levemente aberto: falta de ar de partida ou atuador/borboleta.");
+  if(d.borboleta==="sim") add(h,"iac",35,"Corpo de borboleta sujo ou travando.");
+  if(d.iacCurto==="sim"){
+    add(h,"iac",70,"Atuador com suspeita de curto/aquecimento.");
+    add(h,"vref",25,"Atuador pode derrubar alimentação/chicote.");
+  }
+
+  if(d.tempAmb!==null && d.tempVolt!==null){
+    const ref = nearest(TENS_TEMP,d.tempAmb);
+    const diff = Math.abs(d.tempVolt-ref[1]);
+    if(d.tempVolt>=4.7){
+      add(h,"temp",70,`Tensão temperatura ${d.tempVolt} V: provável circuito aberto.`);
+      add(h,"combustivel",15,"Leitura fria falsa pode enriquecer mistura.");
+    }else if(d.tempVolt<=0.2){
+      add(h,"temp",70,`Tensão temperatura ${d.tempVolt} V: provável curto para terra.`);
+    }else if(diff>0.7){
+      add(h,"temp",45,`Para ${d.tempAmb}°C, esperado perto de ${ref[1]} V; medido ${d.tempVolt} V.`);
+    }else{
+      h.temp.score -= 15;
+    }
+  }
+
+  if(d.tempAmb!==null && d.tempOhm!==null){
+    const refO = nearest(OHM_TEMP,d.tempAmb);
+    const diffPct = Math.abs(d.tempOhm-refO[1]) / refO[1];
+    if(diffPct>0.35) add(h,"temp",35,`Resistência fora da referência: para ${d.tempAmb}°C, perto de ${refO[1]}Ω; medido ${d.tempOhm}Ω.`);
+    else h.temp.score -= 8;
+  }
+
+  if(d.conectorTemp==="ruim") add(h,"temp",45,"Conector/chicote do sensor de temperatura ruim.");
+
+  if(d.pressao!==null){
+    if(d.pressao>3.2) add(h,"combustivel",45,`Pressão acima de 3,2 bar: ${d.pressao} bar.`);
+    else if(d.pressao<2.8) add(h,"combustivel",35,`Pressão abaixo de 2,8 bar: ${d.pressao} bar.`);
+    else h.combustivel.score -= 10;
+  }
+
+  if(d.pressaoCai==="sim") add(h,"combustivel",45,"Pressão cai rápido após desligar: possível bico vazando, regulador, retorno ou válvula da bomba.");
+  if(d.combVacuo==="sim") add(h,"combustivel",80,"Há combustível na mangueira de vácuo do regulador.");
+
+  if(d.velas==="todasMolhadas"){
+    add(h,"combustivel",55,"Todas as velas molhadas: excesso geral ou falta de queima.");
+    add(h,"ignicao",20,"Velas molhadas também podem ocorrer por centelha fraca.");
+  }
+  if(d.velas==="umaMolhada") add(h,"combustivel",75,"Uma ou duas velas molhadas: suspeita forte de bico específico vazando.");
+  if(d.velas==="secas"){
+    h.combustivel.score -= 25;
+    add(h,"tps",20,"Velas secas reforçam corte de pulso/comando, não excesso de combustível.");
+  }
+  if(d.velas==="pretas"){
+    add(h,"combustivel",30,"Velas pretas indicam histórico de mistura rica.");
+    add(h,"temp",15,"Temperatura falsa pode contribuir para mistura rica.");
+  }
+
+  if(d.centelha==="fraca") add(h,"ignicao",55,"Centelha fraca/amarelada.");
+  if(d.centelha==="ausente") add(h,"ignicao",85,"Centelha ausente.");
+  if(d.centelha==="forte") h.ignicao.score -= 20;
+  if(d.arranque==="pesado") add(h,"ignicao",30,"Arranque pesado pode derrubar tensão da injeção/ignição.");
+
+  const obs = d.obs.toLowerCase();
+  if(obs.includes("vazamento") || obs.includes("fumaça") || obs.includes("curto")) add(h,"combustivel",25,"Observação menciona vazamento/fumaça/curto: risco elevado.");
+  if(obs.includes("tps")) add(h,"tps",15,"Observação menciona TPS.");
+  if(obs.includes("map")) add(h,"vref",15,"Observação menciona MAP, que divide referência/terra de sensores.");
+  if(obs.includes("chicote") || obs.includes("conector") || obs.includes("fio")) add(h,"vref",25,"Observação menciona chicote/conector/fiação.");
+  if(obs.includes("temperatura")) add(h,"temp",15,"Observação menciona temperatura.");
+  if(obs.includes("bico") || obs.includes("gotej")) add(h,"combustivel",20,"Observação menciona bico/gotejamento.");
+
+  Object.keys(h).forEach(k=>{
+    if(h[k].score<0) h[k].score=0;
+  });
+
+  const lista = Object.values(h).sort((a,b)=>b.score-a.score);
+  render(lista,d);
+  save();
+}
+
+function nextTest(d,top){
+  if(!d.tpsOff && !d.iacOff) return "Faça primeiro o teste separador: desligue só o TPS e tente partida; depois religue TPS, desligue só o atuador de lenta e tente partida.";
+  if(d.vrefOff===null || d.vrefOn===null) return "Meça VREF 5 V com o plug do corpo/TBI desligado e depois ligado.";
+  if(d.tpsFechado===null || d.tpsAberto===null) return "Meça TPS fechado e aberto total. Referência: 0,5–1,0 V fechado e 4–5 V aberto.";
+  if(!d.pulsoLigado || !d.pulsoDesligado) return "Teste pulso dos bicos com plug TBI ligado e depois desligado.";
+  if(d.pressao===null) return "Meça pressão de combustível em marcha lenta. Referência: 2,8–3,2 bar.";
+  return "Siga os testes da hipótese principal abaixo antes de trocar qualquer peça.";
+}
+
+function render(lista,d){
+  const top = lista[0];
+  let riskClass = "warn";
+  let risk = "Média";
+  let riskTxt = "Defeito impede partida, mas ainda precisa de medição decisiva.";
+
+  if(d.combVacuo==="sim" || d.velas==="todasMolhadas" || (d.pressao!==null && d.pressao>3.5)){
+    risk = "Alta";
+    riskClass = "danger";
+    riskTxt = "Risco de afogamento, contaminação do óleo e excesso de combustível.";
+  }
+  if(d.obs.toLowerCase().includes("vazamento") || d.obs.toLowerCase().includes("fumaça") || d.obs.toLowerCase().includes("curto")){
+    risk = "Crítica";
+    riskClass = "danger";
+    riskTxt = "Possível vazamento, fumaça ou curto. Não insistir na partida.";
+  }
+
+  let html = `
+    <div class="step-title">
+      <div class="step-n">✓</div>
+      <h2>Resultado</h2>
+    </div>
+
+    <div class="box ${riskClass}">
+      <strong>Urgência: ${risk}</strong><br>${riskTxt}
+    </div>
+
+    <p><span class="badge b1">PRÓXIMO TESTE</span> ${nextTest(d,top)}</p>
+
+    <h3>Hipóteses em ordem</h3>
+  `;
+
+  lista.forEach(item=>{
+    const pct = Math.min(item.score,100);
+    html += `
+      <div class="score">
+        <div class="score-head">
+          <span>${item.nome}</span>
+          <span>${item.score} pts</span>
+        </div>
+        <div class="bar"><div class="fill" style="width:${pct}%;background:${color(item.score)}"></div></div>
+        <div class="small">Certeza: <strong>${certeza(item.score)}</strong></div>
+      </div>
+    `;
+  });
+
+  html += `
+    <h3>Hipótese principal</h3>
+    <div class="box info">
+      <strong>${top.nome}</strong><br>
+      Nível de certeza: <strong>${certeza(top.score)}</strong>
+    </div>
+
+    <h3>Testes para confirmar</h3>
+    <ul>${top.testes.map(t=>`<li>${t}</li>`).join("")}</ul>
+  `;
+
+  if(top.evid.length){
+    html += `<h3>Evidências usadas</h3><ul>${top.evid.map(e=>`<li>${e}</li>`).join("")}</ul>`;
+  }
+
+  html += `
+    <h3>Não trocar sem testar</h3>
+    <ul>
+      <li>Não condenar central EEC-IV sem testar VREF, terra, TPS, pulso dos bicos, rotação, alimentação e aterramento.</li>
+      <li>Não condenar TPS novo sem medir sinal fechado, meio, aberto e subida lisa.</li>
+      <li>Não condenar sensor de temperatura novo sem medir tensão ou resistência real.</li>
+      <li>Não condenar bomba/regulador/bicos sem pressão, vácuo do regulador e estanqueidade.</li>
+    </ul>
+
+    <div class="box good">
+      <span class="badge b3">CONCLUSÃO</span>
+      A ferramenta não decide por peça; ela aponta qual circuito tem mais evidência e qual teste confirma.
+    </div>
+  `;
+
+  $("resultado").innerHTML = html;
+  $("resultado").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function toggleTheme(){
+  const body = document.body;
+  const now = body.getAttribute("data-theme");
+  const next = now === "dark" ? "light" : "dark";
+  body.setAttribute("data-theme",next);
+  document.querySelector(".theme-btn").textContent = next === "dark" ? "🌙" : "☀️";
+  localStorage.setItem("themeVersailles",next);
+}
+
+function save(){
+  const data = {state};
+  document.querySelectorAll("input,select,textarea").forEach(el=>{
+    data[el.id]=el.value;
+  });
+  localStorage.setItem("rastherVersaillesMobile",JSON.stringify(data));
+}
+
+function load(){
+  const theme = localStorage.getItem("themeVersailles");
+  if(theme){
+    document.body.setAttribute("data-theme",theme);
+    document.querySelector(".theme-btn").textContent = theme === "dark" ? "🌙" : "☀️";
+  }
+
+  const raw = localStorage.getItem("rastherVersaillesMobile");
+  if(!raw) return;
+  try{
+    const data = JSON.parse(raw);
+    if(data.state){
+      Object.assign(state,data.state);
+      Object.keys(state).forEach(name=>{
+        const btn = document.querySelector(`[data-name="${name}"] button[onclick*="'${state[name]}'"]`);
+        if(btn) btn.classList.add("active");
+      });
+    }
+    Object.keys(data).forEach(id=>{
+      const el = $(id);
+      if(el && id !== "state") el.value = data[id];
+    });
+  }catch(e){}
+}
+
+document.addEventListener("input",save);
+document.addEventListener("change",save);
+window.addEventListener("load",load);
+</script>
+
+</body>
+</html>
