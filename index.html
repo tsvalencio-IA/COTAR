@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SOS Orçamentos IA - thIAguinho Soluções</title>
 
+  <!-- PWA / instalação na tela inicial -->
+  <meta name="theme-color" content="#04184c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SOS Orça IA">
+  <meta name="application-name" content="SOS Orçamentos IA">
+  <link rel="manifest" href="manifest.webmanifest?v=8.0.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=8.0.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png?v=8.0.0">
+  <link rel="shortcut icon" href="icons/favicon.ico?v=8.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=8.0.0">
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="css/comparador.css?v=7.0.0">
@@ -164,6 +177,20 @@
       #secPreview .preview-box{padding-bottom:18px!important}
     }
 
+
+
+    /* PWA — botão de instalação e instruções */
+    .install-app-btn{border:0;background:#15803d;color:#fff;border-radius:12px;min-height:40px;padding:9px 12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;box-shadow:0 8px 18px rgba(21,128,61,.2)}
+    .install-app-btn:active{transform:translateY(1px)}
+    .pwa-install-modal{position:fixed;inset:0;background:rgba(2,6,23,.68);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:18px}
+    .pwa-install-card{width:min(520px,100%);background:#fff;border-radius:22px;padding:20px;box-shadow:0 24px 80px rgba(2,6,23,.34)}
+    .pwa-install-card h2{font-size:20px;color:var(--navy);margin-bottom:10px}
+    .pwa-install-card p{font-size:15px;line-height:1.6;color:#374151}
+    .pwa-install-icon{width:82px;height:82px;border-radius:20px;display:block;margin:-61px auto 14px;box-shadow:0 12px 30px rgba(2,6,23,.24);background:#04184c}
+    .pwa-install-actions{display:flex;gap:8px;margin-top:16px}
+    .pwa-install-actions .btn{flex:1}
+    @media(max-width:520px){.install-app-btn span{display:none}.install-app-btn{width:40px;padding:0}.statusbar{gap:6px}.pwa-install-modal{padding:12px}.pwa-install-card{padding:18px;margin-bottom:max(8px,env(safe-area-inset-bottom))}}
+
     @media(print){ .topbar,.bottomnav,.no-print{display:none!important} body{padding:0;background:#fff}.app{max-width:none;padding:0}.card{box-shadow:none;border:0}.pdfsheet{box-shadow:none;border:0;max-width:100%;padding:0}.section{display:none!important}.section.printme{display:block!important} }
   </style>
 </head>
@@ -172,7 +199,7 @@
   <div class="app">
     <div class="topbar no-print">
       <div class="brand"><h1><i class="fa-solid fa-file-invoice-dollar"></i> SOS Orçamentos IA</h1><p>Áudio, edição manual, preview e PDF.</p></div>
-      <div class="statusbar"><div class="status" id="saveStatus">Pronto</div><button class="admin-config-btn no-print" title="Configuração" onclick="App.show('secConfig')"><i class="fa-solid fa-gear"></i></button></div>
+      <div class="statusbar"><div class="status" id="saveStatus">Pronto</div><button id="installAppBtn" class="install-app-btn no-print hidden" type="button" title="Instalar aplicativo" onclick="PWAInstall.install()"><i class="fa-solid fa-download"></i><span>Instalar app</span></button><button class="admin-config-btn no-print" title="Configuração" onclick="App.show('secConfig')"><i class="fa-solid fa-gear"></i></button></div>
     </div>
 
     <section id="secAudio" class="section active">
@@ -345,6 +372,16 @@
     };
     window.addEventListener('DOMContentLoaded',()=>App.init());
   </script>
+  <div id="pwaInstallModal" class="pwa-install-modal hidden no-print" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="pwaInstallTitle">
+    <div class="pwa-install-card">
+      <img class="pwa-install-icon" src="icons/icon-192.png" alt="Ícone SOS Orçamentos IA">
+      <h2 id="pwaInstallTitle">Instalar SOS Orçamentos IA</h2>
+      <p id="pwaInstallMessage"></p>
+      <div class="pwa-install-actions"><button class="btn main" type="button" onclick="PWAInstall.closeHelp()">Entendi</button></div>
+    </div>
+  </div>
+
+  <script src="js/pwa.js?v=8.0.0"></script>
   <script src="js/comparador.js?v=7.0.0"></script>
 </body>
 </html>

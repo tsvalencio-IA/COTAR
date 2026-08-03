@@ -85,3 +85,11 @@ ARQUIVOS FUNCIONAIS ALTERADOS
 - js/comparador.js
 
 As rotinas originais de áudio, orçamento, serviços, dados e PDF do orçamento principal não foram reescritas.
+
+V8 — PWA E ÍCONE INSTALÁVEL
+- Novo logotipo convertido em ícones 16, 32, 48, 72, 96, 144, 180, 192, 384, 512 e 1024 px.
+- Ícones adaptativos maskable em 192 e 512 px.
+- Manifesto PWA com start_url e scope relativos para GitHub Pages /COTAR/.
+- Service Worker com cache dos arquivos locais e atualização pela rede.
+- Botão Instalar app com fluxo Android/Chrome e instrução específica para iPhone/iPad.
+- Nenhuma lógica do orçamento ou comparador foi removida.
