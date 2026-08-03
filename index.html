@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SOS Orça IA">
   <meta name="application-name" content="SOS Orçamentos IA">
-  <link rel="manifest" href="manifest.webmanifest?v=9.0.0">
+  <link rel="manifest" href="manifest.webmanifest?v=10.0.0">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=8.0.0">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png?v=8.0.0">
   <link rel="shortcut icon" href="icons/favicon.ico?v=8.0.0">
@@ -20,7 +20,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=7.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=10.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -191,6 +191,80 @@
     .pwa-install-actions .btn{flex:1}
     @media(max-width:520px){.install-app-btn span{display:none}.install-app-btn{width:40px;padding:0}.statusbar{gap:6px}.pwa-install-modal{padding:12px}.pwa-install-card{padding:18px;margin-bottom:max(8px,env(safe-area-inset-bottom))}}
 
+
+
+    /* V10 — lançamento manual realmente responsivo e sequencial */
+    .manual-items-section{padding:18px;overflow:visible}
+    .manual-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e5e7eb}
+    .manual-section-head h3{margin:0 0 5px}
+    .manual-section-head p{font-size:13px;line-height:1.45;color:var(--muted);font-weight:600}
+    .manual-main-add{flex:0 0 auto;min-width:180px}
+    .manual-entry-card{padding:16px;border:1.5px solid #cbd5e1;box-shadow:0 6px 18px rgba(15,23,42,.05);scroll-margin-top:92px}
+    .manual-entry-card.is-draft{border-color:#93c5fd;background:#f8fbff}
+    .manual-entry-card.is-complete{border-color:#86efac;background:#fbfffc}
+    .manual-entry-title{display:flex;align-items:center;gap:9px}
+    .manual-entry-number{width:28px;height:28px;border-radius:999px;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex:0 0 auto}
+    .manual-entry-state{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#1d4ed8}
+    .is-complete .manual-entry-state{color:#15803d}
+    .manual-form{display:grid;gap:12px;align-items:start}
+    .manual-field{min-width:0}
+    .manual-field label{font-size:12px;margin-bottom:7px}
+    .manual-field input,.manual-field select,.manual-field textarea{font-size:17px;min-height:52px;padding:13px 14px;border-radius:12px;background:#fff}
+    .manual-field textarea{line-height:1.4;overflow:auto}
+    .manual-field-description textarea{min-height:92px;font-size:18px;font-weight:800}
+    .manual-field-system textarea{min-height:88px;font-weight:650}
+    .manual-field-qty input,.manual-field-discount input{text-align:center}
+    .manual-field-value input,.manual-field-total input,.manual-field-hour input{font-weight:900}
+    .part-form{grid-template-columns:minmax(105px,.8fr) minmax(320px,3fr) minmax(190px,1.5fr) minmax(82px,.6fr) minmax(145px,1.1fr) minmax(92px,.7fr);grid-template-areas:"code description brand qty value discount"}
+    .service-form{grid-template-columns:minmax(105px,.75fr) minmax(190px,1.25fr) minmax(340px,2.8fr) minmax(88px,.65fr) minmax(135px,1fr) minmax(145px,1.05fr) minmax(92px,.7fr);grid-template-areas:"code section description description description description description" "system system system system system system system" "tmo hour total discount . . ."}
+    .manual-field-code{grid-area:code}.manual-field-description{grid-area:description}.manual-field-brand{grid-area:brand}.manual-field-qty{grid-area:qty}.manual-field-value{grid-area:value}.manual-field-discount{grid-area:discount}
+    .manual-field-section{grid-area:section}.manual-field-system{grid-area:system}.manual-field-tmo{grid-area:tmo}.manual-field-hour{grid-area:hour}.manual-field-total{grid-area:total}
+    .manual-entry-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:13px;border-top:1px dashed #cbd5e1}
+    .manual-entry-actions-left,.manual-entry-actions-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .manual-entry-hint{font-size:12px;color:var(--muted);font-weight:700;line-height:1.35}
+    .manual-next-button{min-width:190px;background:#15803d!important;color:#fff!important}
+    .manual-list-footer{padding:12px 0 2px;text-align:center}
+    .manual-list-footer .btn{width:min(420px,100%);min-height:52px;font-size:15px}
+    .manual-empty{border:2px dashed #cbd5e1;border-radius:16px;padding:22px;text-align:center;background:#f8fafc}
+    .manual-empty i{font-size:28px;color:#64748b;margin-bottom:9px}
+    .manual-empty b{display:block;font-size:16px;color:var(--navy);margin-bottom:5px}
+    .manual-empty p{font-size:13px;color:var(--muted);margin-bottom:13px;line-height:1.45}
+    .manual-mode-note{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#475569;background:#f1f5f9;border-radius:999px;padding:6px 9px}
+
+    @media(max-width:1120px){
+      .part-form{grid-template-columns:minmax(120px,.8fr) minmax(260px,2.4fr) minmax(170px,1.2fr) minmax(90px,.65fr);grid-template-areas:"code description description qty" "brand brand value discount"}
+      .service-form{grid-template-columns:minmax(120px,.75fr) minmax(220px,1.25fr) minmax(120px,.75fr) minmax(145px,.9fr);grid-template-areas:"description description description description" "system system system system" "code section section section" "tmo hour total discount"}
+    }
+    @media(max-width:760px){
+      .manual-items-section{padding:12px;margin-left:-2px;margin-right:-2px}
+      .manual-section-head{align-items:stretch;flex-direction:column;gap:11px}
+      .manual-main-add{width:100%;min-width:0;min-height:50px;font-size:15px}
+      .manual-entry-card{padding:13px;margin-bottom:12px;scroll-margin-top:74px}
+      .manual-entry-card .item-head{align-items:center}
+      .manual-form{gap:11px}
+      .part-form{grid-template-columns:minmax(0,1fr) 96px;grid-template-areas:"description description" "brand brand" "code qty" "value discount"}
+      .service-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"description description" "section section" "system system" "code code" "tmo hour" "total discount"}
+      .manual-field input,.manual-field select,.manual-field textarea{font-size:16px;min-height:52px;padding:13px}
+      .manual-field-description textarea{min-height:104px;font-size:17px}
+      .manual-field-system textarea{min-height:96px}
+      .manual-entry-actions{align-items:stretch;flex-direction:column-reverse}
+      .manual-entry-actions-left,.manual-entry-actions-right{width:100%}
+      .manual-entry-actions .btn{flex:1;min-height:48px}
+      .manual-next-button{width:100%;min-width:0}
+      .manual-entry-hint{width:100%;text-align:center}
+    }
+    @media(max-width:400px){
+      .part-form,.service-form{grid-template-columns:1fr;grid-template-areas:"description" "brand" "section" "system" "code" "qty" "value" "tmo" "hour" "total" "discount"}
+      .manual-field-qty input,.manual-field-discount input{text-align:left}
+    }
+    @media(min-width:1500px){
+      .app{max-width:1560px}
+      .manual-field input,.manual-field select,.manual-field textarea{font-size:19px;min-height:58px}
+      .manual-field-description textarea{font-size:20px;min-height:104px}
+      .manual-field label{font-size:13px}
+      .manual-entry-card{padding:18px}
+    }
+
     @media(print){ .topbar,.bottomnav,.no-print{display:none!important} body{padding:0;background:#fff}.app{max-width:none;padding:0}.card{box-shadow:none;border:0}.pdfsheet{box-shadow:none;border:0;max-width:100%;padding:0}.section{display:none!important}.section.printme{display:block!important} }
   </style>
 </head>
@@ -234,8 +308,20 @@
     <section id="secItens" class="section">
       <h2 class="section-title">Orçamento</h2>
       <div class="card"><h3><i class="fa-solid fa-calculator"></i> Totais</h3><div class="totals"><div class="totalbox"><span>Serviços</span><b id="totalServicos">R$ 0,00</b></div><div class="totalbox"><span>Peças</span><b id="totalPecas">R$ 0,00</b></div><div class="totalbox"><span>Horas</span><b id="totalHoras">0,00 h</b></div><div class="totalbox grand"><span>Total geral</span><b id="totalGeral">R$ 0,00</b></div></div></div>
-      <div class="card"><h3><i class="fa-solid fa-gears"></i> Peças / materiais</h3><div class="btnrow" style="margin-bottom:12px"><button class="btn main" onclick="App.addPart()"><i class="fa-solid fa-plus"></i> Peça</button><button class="btn line" onclick="App.addQuickPart()"><i class="fa-solid fa-bolt"></i> Peça rápida</button></div><div id="partsList"></div></div>
-      <div class="card"><h3><i class="fa-solid fa-screwdriver-wrench"></i> Serviços / mão de obra</h3><div class="btnrow" style="margin-bottom:12px"><button class="btn main" onclick="App.addService()"><i class="fa-solid fa-plus"></i> Serviço</button><button class="btn line" onclick="App.addQuickService()"><i class="fa-solid fa-bolt"></i> Serviço rápido</button></div><div id="servicesList"></div></div>
+      <div class="card manual-items-section" id="partsSectionCard">
+        <div class="manual-section-head">
+          <div><h3><i class="fa-solid fa-gears"></i> Peças / materiais</h3><p>Descrição e marca ficam amplas; quantidade e desconto ocupam somente o espaço necessário.</p></div>
+          <button class="btn main manual-main-add" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Adicionar peça</button>
+        </div>
+        <div id="partsList"></div>
+      </div>
+      <div class="card manual-items-section" id="servicesSectionCard">
+        <div class="manual-section-head">
+          <div><h3><i class="fa-solid fa-screwdriver-wrench"></i> Serviços / mão de obra</h3><p>Preencha a descrição e use valor total ou TMO × valor por hora.</p></div>
+          <button class="btn main manual-main-add" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Adicionar serviço</button>
+        </div>
+        <div id="servicesList"></div>
+      </div>
     </section>
 
     <section id="secComparador" class="section">
@@ -313,7 +399,7 @@
       num(v){ if(typeof v === 'number') return Number.isFinite(v)?v:0; let x=String(v??'').trim().replace(/[^\d,.-]/g,''); if(!x) return 0; const comma=x.lastIndexOf(','), dot=x.lastIndexOf('.'); if(comma>-1&&dot>-1){x=comma>dot?x.replace(/\./g,'').replace(',','.'):x.replace(/,/g,'');}else if(comma>-1){x=x.replace(',','.');}else if(dot>-1){const parts=x.split('.'); if(parts.length>2||parts[parts.length-1].length===3)x=x.replace(/\./g,'');} return Number(x)||0; },
       today(){return new Date().toISOString().slice(0,10);}, osCode(){return Math.random().toString(36).slice(2,8).toUpperCase();},
       toast(msg){const t=this.$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>t.classList.remove('show'),3000);},
-      init(){ const cfg=window.SOS_CONFIG||{}, office=cfg.OFFICE||{}; this.$('oficinaNome').value=office.nome||'S.O.S. VALÊNCIO'; this.$('oficinaCnpj').value=office.cnpj||''; this.$('oficinaTelefone').value=office.telefone||''; this.$('oficinaEmail').value=office.email||''; this.$('oficinaEndereco').value=office.endereco||''; this.$('status').value=(cfg.PDF&&cfg.PDF.statusPadrao)||'Orçamento_Enviado'; this.$('emissao').value=this.today(); this.$('os').value=this.osCode(); this.$('powered').textContent=(cfg.BRAND&&cfg.BRAND.assinatura)||'Powered by thIAguinho Soluções Digitais'; this.$('cfgKey').value=(window.OS_API&&typeof window.OS_API.getGroqKey==='function'?window.OS_API.getGroqKey():(cfg.GROQ_API_KEY||'')); this.$('cfgTranscription').value=cfg.GROQ_TRANSCRIPTION_MODEL||'whisper-large-v3-turbo'; this.$('cfgChat').value=cfg.GROQ_CHAT_MODEL||'openai/gpt-oss-20b'; document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>this.scheduleSave())); this.loadLocal(); this.renderAll(); this.setupPreviewPinchZoom(); this.show('secAudio'); },
+      init(){ const cfg=window.SOS_CONFIG||{}, office=cfg.OFFICE||{}; this.$('oficinaNome').value=office.nome||'S.O.S. VALÊNCIO'; this.$('oficinaCnpj').value=office.cnpj||''; this.$('oficinaTelefone').value=office.telefone||''; this.$('oficinaEmail').value=office.email||''; this.$('oficinaEndereco').value=office.endereco||''; this.$('status').value=(cfg.PDF&&cfg.PDF.statusPadrao)||'Orçamento_Enviado'; this.$('emissao').value=this.today(); this.$('os').value=this.osCode(); this.$('powered').textContent=(cfg.BRAND&&cfg.BRAND.assinatura)||'Powered by thIAguinho Soluções Digitais'; this.$('cfgKey').value=(window.OS_API&&typeof window.OS_API.getGroqKey==='function'?window.OS_API.getGroqKey():(cfg.GROQ_API_KEY||'')); this.$('cfgTranscription').value=cfg.GROQ_TRANSCRIPTION_MODEL||'whisper-large-v3-turbo'; this.$('cfgChat').value=cfg.GROQ_CHAT_MODEL||'openai/gpt-oss-20b'; document.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>this.scheduleSave())); this.loadLocal(); this.renderAll(); this.setupPreviewPinchZoom(); this.setupManualEntryKeyboard(); this.show('secAudio'); },
       show(id){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active','printme')); if(!this.$(id))id='secAudio'; this.$(id).classList.add('active'); if(id==='secPreview'){this.$(id).classList.add('printme'); this.renderPreview();} document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.target===id)); window.scrollTo({top:0,behavior:'smooth'}); },
       collect(){const d={}; this.ids.forEach(id=>d[id]=this.$(id).value); d.services=this.state.services; d.parts=this.state.parts; return d;},
       apply(d){if(!d)return; this.ids.forEach(id=>{if(d[id]!==undefined)this.$(id).value=d[id];}); this.state.services=Array.isArray(d.services)?d.services:[]; this.state.parts=Array.isArray(d.parts)?d.parts:[]; this.renderAll();},
@@ -328,13 +414,80 @@
       normText(v,upper=true){let x=String(v||'').replace(/\s+/g,' ').trim();return upper?x.toUpperCase():x;},
       cleanKey(txt){return this.normText(txt||'',true).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(DE|DA|DO|DAS|DOS|A|O|AS|OS|E|EM|NA|NO|NAS|NOS|AOS|AO)\b/g,' ').replace(/\bJUNTOS\b/g,'JUNTO').replace(/\bJUNTAS\b/g,'JUNTA').replace(/\bTAMPAS\b/g,'TAMPA').replace(/\bVALVULAS\b/g,'VALVULA').replace(/\bDISCOS\b/g,'DISCO').replace(/\bPASTILHAS\b/g,'PASTILHA').replace(/\bUSADAS\b/g,'USADA').replace(/\bFREIOS\b/g,'FREIO').replace(/\bDENTREIROS\b/g,'DIANTEIRO').replace(/\bDENTROIRES\b/g,'DIANTEIRO').replace(/\bDIANTEIROS\b/g,'DIANTEIRO').replace(/\bTRASEIROS\b/g,'TRASEIRO').replace(/\s+/g,' ').trim();},
       partKey(p){return this.cleanKey(p.descricao||'')+'|'+this.cleanKey(p.fornecedor||'');}, isSamePart(a,b){const ak=this.cleanKey(a.descricao||''),bk=this.cleanKey(b.descricao||'');if(!ak||!bk)return false;if(ak===bk)return true;const av=this.num(a.valorUnit??0),bv=this.num(b.valorUnit??0),aq=this.num(a.qtd??1),bq=this.num(b.qtd??1);const sameNumbers=Math.abs(av-bv)<0.01&&Math.abs(aq-bq)<0.01;const aw=ak.split(' ').filter(w=>w.length>=6),bw=bk.split(' ').filter(w=>w.length>=6);const shared=aw.filter(w=>bw.some(x=>x===w||x.includes(w)||w.includes(x))).length;return sameNumbers&&shared>=1;}, cleanServiceKeyText(txt){return this.cleanKey(txt||'').replace(/^SERVICO\s+/,'').replace(/^MAO OBRA\s+/,'').replace(/^DE\s+/,'').replace(/\s+/g,' ').trim();}, serviceKey(s){return this.cleanKey(s.secao||'')+'|'+this.cleanServiceKeyText(s.descricao||'');},
-      addPart(p={}){const obj={cod:this.normText(p.cod||'',true),descricao:this.normText(p.descricao||'',true),fornecedor:this.normText(p.fornecedor||'',true),qtd:this.num(p.qtd)||1,valorUnit:this.num(p.valorUnit??p.valor_unitario??p.valor??0),desc:this.num(p.desc)||0}; if(!obj.descricao)return; const k=this.partKey(obj); const old=this.state.parts.find(x=>this.partKey(x)===k||this.isSamePart(x,obj)); if(old){if(obj.cod)old.cod=obj.cod;if(obj.fornecedor)old.fornecedor=obj.fornecedor;if(obj.qtd>0)old.qtd=obj.qtd;if(obj.valorUnit>0)old.valorUnit=obj.valorUnit;if(obj.desc>0)old.desc=obj.desc;}else{this.state.parts.push(obj);} this.renderAll(); this.saveLocal(false);},
-      addQuickPart(){this.addPart({descricao:'NOVA PEÇA',qtd:1,valorUnit:0,desc:0});this.show('secItens');}, removePart(i){this.state.parts.splice(i,1);this.renderAll();this.saveLocal(false);},
-      addService(s={}){let tmo=this.num(s.tmo)||0, valorHora=this.num(s.valorHora??s.valor_hora??0), valorTotal=this.num(s.valorTotal??s.valor_total??s.total??s.valor??0); const obj={cod:this.normText(s.cod||'',true),secao:this.normText(s.secao||'MECANICA',true),sistema:this.normText(s.sistema||'MECANICA E ELETRICA GERAL EM VEICULOS PEQUENOS E MEDIOS\nTipo: CARRO',true),descricao:this.normText(s.descricao||'',true),tmo,valorHora,valorTotal,desc:this.num(s.desc)||0}; if(!obj.descricao&&valorTotal>0)obj.descricao='SERVIÇO'; if(!obj.descricao)return; const k=this.serviceKey(obj); const old=this.state.services.find(x=>this.serviceKey(x)===k); if(old){if(obj.cod)old.cod=obj.cod;if(obj.sistema)old.sistema=obj.sistema;if(obj.tmo>0)old.tmo=obj.tmo;if(obj.valorTotal>0){old.valorTotal=obj.valorTotal;old.valorHora=0;old.tmo=0;}else if(obj.valorHora>0){old.valorHora=obj.valorHora;old.valorTotal=0;if(old.tmo<=0)old.tmo=1;}if(obj.desc>0)old.desc=obj.desc;}else{this.state.services.push(obj);} this.renderAll(); this.saveLocal(false);},
-      addQuickService(){this.addService({descricao:'NOVO SERVIÇO',valorTotal:0,tmo:0,valorHora:0,desc:0});this.show('secItens');}, removeService(i){this.state.services.splice(i,1);this.renderAll();this.saveLocal(false);},
-      serviceTotal(s){const direct=this.num(s.valorTotal??s.valor_total??0); if(direct>0)return direct*(1-this.num(s.desc)/100); const t=this.num(s.tmo), vh=this.num(s.valorHora); return (t>0?t:vh>0?1:0)*vh*(1-this.num(s.desc)/100);}, partTotal(p){return this.num(p.qtd)*this.num(p.valorUnit)*(1-this.num(p.desc)/100);},
-      renderParts(){const box=this.$('partsList'); if(!this.state.parts.length){box.innerHTML='<div class="empty">Nenhuma peça lançada.</div>';return;} box.innerHTML=this.state.parts.map((p,i)=>`<div class="item-card"><div class="item-head"><b>Peça ${i+1}</b><span class="item-total">${this.money(this.partTotal(p))}</span></div><div class="item-grid"><div class="col-2 m6"><label>Cód.</label><input value="${this.esc(p.cod)}" oninput="App.state.parts[${i}].cod=this.value;App.scheduleSave()"></div><div class="col-5 m12"><label>Descrição da peça</label><textarea oninput="App.state.parts[${i}].descricao=this.value;App.scheduleSave()">${this.esc(p.descricao)}</textarea></div><div class="col-3 m12"><label>Marca</label><input value="${this.esc(p.fornecedor)}" oninput="App.state.parts[${i}].fornecedor=this.value;App.scheduleSave()"></div><div class="col-2 m6"><label>Qtd.</label><input value="${p.qtd}" inputmode="decimal" oninput="App.state.parts[${i}].qtd=App.num(this.value);App.scheduleSave()"></div><div class="col-3 m6"><label>Valor un.</label><input value="${p.valorUnit}" inputmode="decimal" oninput="App.state.parts[${i}].valorUnit=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m6"><label>Desc. %</label><input value="${p.desc}" inputmode="decimal" oninput="App.state.parts[${i}].desc=App.num(this.value);App.scheduleSave()"></div><div class="col-7 m12"><label>Ação</label><button class="btn bad small" onclick="App.removePart(${i})"><i class="fa-solid fa-trash"></i> Excluir peça</button></div></div></div>`).join('');},
-      renderServices(){const box=this.$('servicesList'); if(!this.state.services.length){box.innerHTML='<div class="empty">Nenhum serviço lançado.</div>';return;} box.innerHTML=this.state.services.map((s,i)=>`<div class="item-card"><div class="item-head"><b>Serviço ${i+1}</b><span class="item-total">${this.money(this.serviceTotal(s))}</span></div><div class="item-grid"><div class="col-2 m6"><label>Cód.</label><input value="${this.esc(s.cod)}" oninput="App.state.services[${i}].cod=this.value;App.scheduleSave()"></div><div class="col-3 m12"><label>Seção</label><select onchange="App.state.services[${i}].secao=this.value;App.scheduleSave()">${['SEM SELECAO / MANUAL','MECANICA','TAPECARIA / CAPOTARIA','FUNILARIA / PINTURA','LAVAGEM / HIGIENIZACAO','BORRACHARIA','INJECAO / ALIMENTACAO','ELETRICA','CAMBIO'].map(x=>`<option ${s.secao===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="col-7 m12"><label>Sistema / tipo veic.</label><textarea oninput="App.state.services[${i}].sistema=this.value;App.scheduleSave()">${this.esc(s.sistema)}</textarea></div><div class="col-12 m12"><label>Descrição do serviço</label><textarea oninput="App.state.services[${i}].descricao=this.value;App.scheduleSave()">${this.esc(s.descricao)}</textarea></div><div class="col-2 m6"><label>TMO</label><input value="${s.tmo}" inputmode="decimal" oninput="App.state.services[${i}].tmo=App.num(this.value);App.state.services[${i}].valorTotal=0;App.scheduleSave()"></div><div class="col-3 m6"><label>Valor hora</label><input value="${s.valorHora}" inputmode="decimal" oninput="App.state.services[${i}].valorHora=App.num(this.value);App.state.services[${i}].valorTotal=0;App.scheduleSave()"></div><div class="col-3 m6"><label>Valor total</label><input value="${s.valorTotal||0}" inputmode="decimal" oninput="App.state.services[${i}].valorTotal=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m6"><label>Desc. %</label><input value="${s.desc}" inputmode="decimal" oninput="App.state.services[${i}].desc=App.num(this.value);App.scheduleSave()"></div><div class="col-2 m12"><label>Ação</label><button class="btn bad small" onclick="App.removeService(${i})"><i class="fa-solid fa-trash"></i> Excluir</button></div></div></div>`).join('');},
+      addPart(p={}){
+        if(!p || Object.keys(p).length===0)return this.startPartEntry();
+        const obj={cod:this.normText(p.cod||'',true),descricao:this.normText(p.descricao||'',true),fornecedor:this.normText(p.fornecedor||'',true),qtd:this.num(p.qtd)||1,valorUnit:this.num(p.valorUnit??p.valor_unitario??p.valor??0),desc:this.num(p.desc)||0};
+        if(!obj.descricao)return;
+        const k=this.partKey(obj),old=this.state.parts.find(x=>this.partKey(x)===k||this.isSamePart(x,obj));
+        if(old){if(obj.cod)old.cod=obj.cod;if(obj.fornecedor)old.fornecedor=obj.fornecedor;if(obj.qtd>0)old.qtd=obj.qtd;if(obj.valorUnit>0)old.valorUnit=obj.valorUnit;if(obj.desc>0)old.desc=obj.desc;}else this.state.parts.push(obj);
+        this.renderAll();this.saveLocal(false);
+      },
+      partComplete(p){return !!String(p?.descricao||'').trim()&&this.num(p?.qtd)>0&&this.num(p?.valorUnit)>0;},
+      serviceComplete(s){return !!String(s?.descricao||'').trim()&&(this.num(s?.valorTotal)>0||(this.num(s?.tmo)>0&&this.num(s?.valorHora)>0));},
+      blankPart(p){return !String(p?.descricao||'').trim()&&!String(p?.cod||'').trim()&&!String(p?.fornecedor||'').trim()&&this.num(p?.valorUnit)<=0;},
+      blankService(s){return !String(s?.descricao||'').trim()&&!String(s?.cod||'').trim()&&this.num(s?.valorTotal)<=0&&this.num(s?.valorHora)<=0&&this.num(s?.tmo)<=0;},
+      startPartEntry(){
+        this.show('secItens');
+        let i=this.state.parts.length-1;
+        if(i>=0&&this.blankPart(this.state.parts[i])){this.focusManualEntry('part',i);return;}
+        this.state.parts.push({cod:'',descricao:'',fornecedor:'',qtd:1,valorUnit:0,desc:0});
+        i=this.state.parts.length-1;this.renderParts();this.updateTotals();this.saveLocal(false);this.focusManualEntry('part',i);
+      },
+      startServiceEntry(){
+        this.show('secItens');
+        let i=this.state.services.length-1;
+        if(i>=0&&this.blankService(this.state.services[i])){this.focusManualEntry('service',i);return;}
+        this.state.services.push({cod:'',secao:'MECANICA',sistema:'MECANICA E ELETRICA GERAL EM VEICULOS PEQUENOS E MEDIOS\nTipo: CARRO',descricao:'',tmo:0,valorHora:0,valorTotal:0,desc:0});
+        i=this.state.services.length-1;this.renderServices();this.updateTotals();this.saveLocal(false);this.focusManualEntry('service',i);
+      },
+      addQuickPart(){this.startPartEntry();},
+      addQuickService(){this.startServiceEntry();},
+      focusManualEntry(type,i){requestAnimationFrame(()=>requestAnimationFrame(()=>{const card=document.querySelector(`[data-entry-type="${type}"][data-entry-index="${i}"]`);if(!card)return;card.scrollIntoView({behavior:'smooth',block:'center'});const field=card.querySelector('[data-primary-field]');if(field){field.focus({preventScroll:true});if(typeof field.select==='function'&&field.value)field.select();}}));},
+      updatePartField(i,field,value){const p=this.state.parts[i];if(!p)return;p[field]=['qtd','valorUnit','desc'].includes(field)?this.num(value):value;this.scheduleSave();this.refreshManualEntry('part',i);},
+      updateServiceField(i,field,value){const s=this.state.services[i];if(!s)return;s[field]=['tmo','valorHora','valorTotal','desc'].includes(field)?this.num(value):value;if((field==='tmo'||field==='valorHora')&&this.num(value)>0)s.valorTotal=0;this.scheduleSave();this.refreshManualEntry('service',i);},
+      normalizeManualField(type,i,field,el){const arr=type==='part'?this.state.parts:this.state.services,item=arr[i];if(!item)return;if(['cod','descricao','fornecedor','secao'].includes(field))item[field]=this.normText(item[field]||'',true);if(el)el.value=item[field]||'';this.scheduleSave();this.refreshManualEntry(type,i);},
+      refreshManualEntry(type,i){
+        const arr=type==='part'?this.state.parts:this.state.services,item=arr[i];if(!item)return;
+        const card=document.querySelector(`[data-entry-type="${type}"][data-entry-index="${i}"]`);if(!card)return;
+        const complete=type==='part'?this.partComplete(item):this.serviceComplete(item),total=type==='part'?this.partTotal(item):this.serviceTotal(item);
+        card.classList.toggle('is-complete',complete);card.classList.toggle('is-draft',!complete);
+        const totalEl=card.querySelector('[data-manual-total]');if(totalEl)totalEl.textContent=this.money(total);
+        const stateEl=card.querySelector('[data-manual-state]');if(stateEl)stateEl.textContent=complete?'Completo':'Em preenchimento';
+        const footer=this.$(type==='part'?'partAddFooter':'serviceAddFooter');if(footer)footer.classList.toggle('hidden',!(i===arr.length-1&&complete));
+        this.updateTotals();
+      },
+      setupManualEntryKeyboard(){
+        if(this._manualKeyboardReady)return;this._manualKeyboardReady=true;
+        document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.shiftKey||e.ctrlKey||e.altKey)return;const el=e.target;if(!el?.matches?.('[data-manual-next]')||el.tagName==='TEXTAREA')return;const card=el.closest('.manual-entry-card');if(!card)return;e.preventDefault();const fields=[...card.querySelectorAll('[data-manual-next]:not([disabled])')],idx=fields.indexOf(el),next=fields[idx+1];if(next){next.focus();if(next.select)next.select();return;}const type=card.dataset.entryType,i=Number(card.dataset.entryIndex),item=(type==='part'?this.state.parts:this.state.services)[i],complete=type==='part'?this.partComplete(item):this.serviceComplete(item);if(complete)(type==='part'?this.startPartEntry():this.startServiceEntry());});
+      },
+      removePart(i){this.state.parts.splice(i,1);this.renderAll();this.saveLocal(false);},
+      removeService(i){this.state.services.splice(i,1);this.renderAll();this.saveLocal(false);},
+      addService(s={}){
+        if(!s || Object.keys(s).length===0)return this.startServiceEntry();
+        let tmo=this.num(s.tmo)||0,valorHora=this.num(s.valorHora??s.valor_hora??0),valorTotal=this.num(s.valorTotal??s.valor_total??s.total??s.valor??0);
+        const obj={cod:this.normText(s.cod||'',true),secao:this.normText(s.secao||'MECANICA',true),sistema:this.normText(s.sistema||'MECANICA E ELETRICA GERAL EM VEICULOS PEQUENOS E MEDIOS\nTipo: CARRO',true),descricao:this.normText(s.descricao||'',true),tmo,valorHora,valorTotal,desc:this.num(s.desc)||0};
+        if(!obj.descricao&&valorTotal>0)obj.descricao='SERVIÇO';if(!obj.descricao)return;
+        const k=this.serviceKey(obj),old=this.state.services.find(x=>this.serviceKey(x)===k);
+        if(old){if(obj.cod)old.cod=obj.cod;if(obj.sistema)old.sistema=obj.sistema;if(obj.tmo>0)old.tmo=obj.tmo;if(obj.valorTotal>0){old.valorTotal=obj.valorTotal;old.valorHora=0;old.tmo=0;}else if(obj.valorHora>0){old.valorHora=obj.valorHora;old.valorTotal=0;if(old.tmo<=0)old.tmo=1;}if(obj.desc>0)old.desc=obj.desc;}else this.state.services.push(obj);
+        this.renderAll();this.saveLocal(false);
+      },
+      serviceTotal(s){const direct=this.num(s.valorTotal??s.valor_total??0);if(direct>0)return direct*(1-this.num(s.desc)/100);const t=this.num(s.tmo),vh=this.num(s.valorHora);return (t>0?t:vh>0?1:0)*vh*(1-this.num(s.desc)/100);},
+      partTotal(p){return this.num(p.qtd)*this.num(p.valorUnit)*(1-this.num(p.desc)/100);},
+      renderParts(){
+        const box=this.$('partsList');
+        if(!this.state.parts.length){box.innerHTML=`<div class="manual-empty"><i class="fa-solid fa-box-open"></i><b>Nenhuma peça lançada</b><p>Toque no botão abaixo. O sistema abrirá a peça e posicionará o cursor diretamente na descrição.</p><button class="btn main" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Adicionar primeira peça</button></div>`;return;}
+        const cards=this.state.parts.map((p,i)=>{const complete=this.partComplete(p);return `<div class="item-card manual-entry-card ${complete?'is-complete':'is-draft'}" data-entry-type="part" data-entry-index="${i}"><div class="item-head"><div class="manual-entry-title"><span class="manual-entry-number">${i+1}</span><div><b>Peça ${i+1}</b><div class="manual-entry-state" data-manual-state>${complete?'Completo':'Em preenchimento'}</div></div></div><span class="item-total" data-manual-total>${this.money(this.partTotal(p))}</span></div><div class="manual-form part-form"><div class="manual-field manual-field-code"><label>Código</label><input data-manual-next value="${this.esc(p.cod)}" placeholder="Opcional" oninput="App.updatePartField(${i},'cod',this.value)" onblur="App.normalizeManualField('part',${i},'cod',this)"></div><div class="manual-field manual-field-description"><label>Descrição da peça</label><textarea data-primary-field data-manual-next rows="3" placeholder="Ex.: KIT AMORTECEDOR DIANTEIRO" oninput="App.updatePartField(${i},'descricao',this.value)" onblur="App.normalizeManualField('part',${i},'descricao',this)">${this.esc(p.descricao)}</textarea></div><div class="manual-field manual-field-brand"><label>Marca</label><input data-manual-next value="${this.esc(p.fornecedor)}" placeholder="Ex.: AXIOS" oninput="App.updatePartField(${i},'fornecedor',this.value)" onblur="App.normalizeManualField('part',${i},'fornecedor',this)"></div><div class="manual-field manual-field-qty"><label>Quantidade</label><input data-manual-next value="${p.qtd}" inputmode="decimal" placeholder="1" oninput="App.updatePartField(${i},'qtd',this.value)"></div><div class="manual-field manual-field-value"><label>Valor unitário</label><input data-manual-next value="${p.valorUnit}" inputmode="decimal" placeholder="0,00" oninput="App.updatePartField(${i},'valorUnit',this.value)"></div><div class="manual-field manual-field-discount"><label>Desconto %</label><input data-manual-next value="${p.desc}" inputmode="decimal" placeholder="0" oninput="App.updatePartField(${i},'desc',this.value)"></div></div><div class="manual-entry-actions"><div class="manual-entry-actions-left"><button class="btn bad small" type="button" onclick="App.removePart(${i})"><i class="fa-solid fa-trash"></i> Excluir</button><span class="manual-mode-note"><i class="fa-solid fa-floppy-disk"></i> Salva automaticamente</span></div><div class="manual-entry-actions-right"><span class="manual-entry-hint">Preencha descrição, quantidade e valor.</span></div></div></div>`}).join('');
+        const ready=this.partComplete(this.state.parts[this.state.parts.length-1]);
+        box.innerHTML=cards+`<div id="partAddFooter" class="manual-list-footer ${ready?'':'hidden'}"><button class="btn ok" type="button" onclick="App.startPartEntry()"><i class="fa-solid fa-plus"></i> Peça concluída — adicionar próxima peça</button></div>`;
+      },
+      renderServices(){
+        const box=this.$('servicesList');
+        if(!this.state.services.length){box.innerHTML=`<div class="manual-empty"><i class="fa-solid fa-screwdriver-wrench"></i><b>Nenhum serviço lançado</b><p>Toque no botão abaixo. O cursor será levado diretamente para a descrição do serviço.</p><button class="btn main" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Adicionar primeiro serviço</button></div>`;return;}
+        const sections=['SEM SELECAO / MANUAL','MECANICA','TAPECARIA / CAPOTARIA','FUNILARIA / PINTURA','LAVAGEM / HIGIENIZACAO','BORRACHARIA','INJECAO / ALIMENTACAO','ELETRICA','CAMBIO'];
+        const cards=this.state.services.map((s,i)=>{const complete=this.serviceComplete(s);return `<div class="item-card manual-entry-card ${complete?'is-complete':'is-draft'}" data-entry-type="service" data-entry-index="${i}"><div class="item-head"><div class="manual-entry-title"><span class="manual-entry-number">${i+1}</span><div><b>Serviço ${i+1}</b><div class="manual-entry-state" data-manual-state>${complete?'Completo':'Em preenchimento'}</div></div></div><span class="item-total" data-manual-total>${this.money(this.serviceTotal(s))}</span></div><div class="manual-form service-form"><div class="manual-field manual-field-code"><label>Código</label><input data-manual-next value="${this.esc(s.cod)}" placeholder="Opcional" oninput="App.updateServiceField(${i},'cod',this.value)" onblur="App.normalizeManualField('service',${i},'cod',this)"></div><div class="manual-field manual-field-section"><label>Seção</label><select data-manual-next onchange="App.updateServiceField(${i},'secao',this.value)">${sections.map(x=>`<option ${s.secao===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="manual-field manual-field-description"><label>Descrição do serviço</label><textarea data-primary-field data-manual-next rows="3" placeholder="Ex.: SUBSTITUIÇÃO DO KIT DE EMBREAGEM" oninput="App.updateServiceField(${i},'descricao',this.value)" onblur="App.normalizeManualField('service',${i},'descricao',this)">${this.esc(s.descricao)}</textarea></div><div class="manual-field manual-field-system"><label>Sistema / tipo de veículo</label><textarea data-manual-next rows="3" oninput="App.updateServiceField(${i},'sistema',this.value)">${this.esc(s.sistema)}</textarea></div><div class="manual-field manual-field-tmo"><label>TMO / horas</label><input data-manual-next value="${s.tmo}" inputmode="decimal" placeholder="0" oninput="App.updateServiceField(${i},'tmo',this.value)"></div><div class="manual-field manual-field-hour"><label>Valor por hora</label><input data-manual-next value="${s.valorHora}" inputmode="decimal" placeholder="0,00" oninput="App.updateServiceField(${i},'valorHora',this.value)"></div><div class="manual-field manual-field-total"><label>Valor total</label><input data-manual-next value="${s.valorTotal||0}" inputmode="decimal" placeholder="0,00" oninput="App.updateServiceField(${i},'valorTotal',this.value)"></div><div class="manual-field manual-field-discount"><label>Desconto %</label><input data-manual-next value="${s.desc}" inputmode="decimal" placeholder="0" oninput="App.updateServiceField(${i},'desc',this.value)"></div></div><div class="manual-entry-actions"><div class="manual-entry-actions-left"><button class="btn bad small" type="button" onclick="App.removeService(${i})"><i class="fa-solid fa-trash"></i> Excluir</button><span class="manual-mode-note"><i class="fa-solid fa-calculator"></i> Total ou TMO × hora</span></div><div class="manual-entry-actions-right"><span class="manual-entry-hint">Preencha a descrição e o valor do serviço.</span></div></div></div>`}).join('');
+        const ready=this.serviceComplete(this.state.services[this.state.services.length-1]);
+        box.innerHTML=cards+`<div id="serviceAddFooter" class="manual-list-footer ${ready?'':'hidden'}"><button class="btn ok" type="button" onclick="App.startServiceEntry()"><i class="fa-solid fa-plus"></i> Serviço concluído — adicionar próximo serviço</button></div>`;
+      },
       renderAll(){this.renderParts();this.renderServices();this.updateTotals();this.renderPreview();}, totals(){const serv=this.state.services.reduce((a,s)=>a+this.serviceTotal(s),0), pec=this.state.parts.reduce((a,p)=>a+this.partTotal(p),0), hrs=this.state.services.reduce((a,s)=>a+this.num(s.tmo),0); return{serv,pec,hrs,total:serv+pec};},
       updateTotals(){const t=this.totals();this.$('totalServicos').textContent=this.money(t.serv);this.$('totalPecas').textContent=this.money(t.pec);this.$('totalHoras').textContent=t.hrs.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' h';this.$('totalGeral').textContent=this.money(t.total);},
       resumoSecoes(){const map={};this.state.services.forEach(s=>{const k=s.secao||'SEM SELECAO / MANUAL';if(!map[k])map[k]={cod:[],tipo:[],horas:0,valor:0};if(s.cod)map[k].cod.push(s.cod);if(s.sistema)map[k].tipo.push(String(s.sistema).split('\n')[0]);map[k].horas+=this.num(s.tmo);map[k].valor+=this.serviceTotal(s);});return Object.entries(map).map(([sec,v])=>({sec,cod:[...new Set(v.cod)].slice(0,6).join(', ')||'-',tipo:[...new Set(v.tipo)].slice(0,2).join(' / ')||'-',horas:v.horas,valor:v.valor}));},
@@ -382,6 +535,6 @@
   </div>
 
   <script src="js/pwa.js?v=8.0.0"></script>
-  <script src="js/comparador.js?v=9.0.0"></script>
+  <script src="js/comparador.js?v=10.0.0"></script>
 </body>
 </html>

@@ -1,0 +1,61 @@
+SOS ORÇAMENTOS IA — V10
+CORREÇÃO DE USABILIDADE PARA LANÇAMENTO MANUAL DE PEÇAS E SERVIÇOS
+Data: 03/08/2026
+
+ARQUIVOS FUNCIONALMENTE ALTERADOS
+- index.html
+- sw.js (somente atualização do cache PWA para V10)
+
+O QUE FOI CORRIGIDO
+1. Campos redimensionados conforme o conteúdo:
+   - Descrição da peça e descrição do serviço ficaram amplas.
+   - Marca e sistema/tipo de veículo receberam espaço adequado.
+   - Quantidade, desconto, TMO e código ocupam áreas menores.
+   - Valor unitário, valor por hora e valor total permanecem destacados e legíveis.
+
+2. Fluxo ao tocar em “Adicionar peça” ou “Adicionar serviço”:
+   - Abre a seção Orçamento.
+   - Cria um único item novo.
+   - Rola automaticamente até o item criado.
+   - Posiciona o cursor diretamente na descrição.
+   - Se já existir um item totalmente vazio, reutiliza esse item e não cria duplicação.
+
+3. Continuação sequencial:
+   - Quando a peça possui descrição, quantidade e valor, aparece o botão
+     “Peça concluída — adicionar próxima peça”.
+   - Quando o serviço possui descrição e valor total, ou TMO e valor por hora,
+     aparece o botão “Serviço concluído — adicionar próximo serviço”.
+   - O próximo item é criado e recebe foco automaticamente na descrição.
+
+4. Atualização sem recarregar todo o formulário:
+   - Total e estado “Completo / Em preenchimento” são atualizados durante a digitação.
+   - O preenchimento não perde o cursor a cada alteração.
+   - Salvamento local automático foi preservado.
+
+5. Responsividade:
+   - Computador: campos longos usam a maior largura; campos curtos ficam compactos.
+   - Tablet: os campos são reorganizados em linhas legíveis.
+   - Celular: descrição, marca e sistema ficam em largura integral; os demais campos
+     são empilhados sem estouro horizontal.
+
+VALIDAÇÕES EXECUTADAS
+- Sintaxe do JavaScript interno: aprovada.
+- Sintaxe de js/comparador.js, js/pwa.js e sw.js: aprovada.
+- Teste de foco automático ao criar peça: aprovado.
+- Teste de foco automático ao criar a peça seguinte: aprovado.
+- Teste de foco automático ao criar serviço: aprovado.
+- Teste de exibição do botão de próxima peça: aprovado.
+- Teste de exibição do botão de próximo serviço: aprovado.
+- Teste de cálculo da peça: 2 × R$ 99,20 = R$ 198,40.
+- Teste de serviço por valor total: R$ 500,00.
+- Teste de prevenção de item vazio duplicado: aprovado.
+- Testes sem estouro horizontal em 320, 360, 390, 480, 760, 1024, 1366 e 1500 px.
+
+PRESERVADO
+- Comparador de preços.
+- Importação dos menores preços para o orçamento.
+- Áudio e interpretação.
+- Dados do cliente e veículo.
+- Preview e PDF.
+- Instalação PWA e ícones.
+- Salvamento local existente.
