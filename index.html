@@ -7,7 +7,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=1.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=2.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -212,56 +212,42 @@
     </section>
 
     <section id="secComparador" class="section">
-      <h2 class="section-title">Comparador inteligente de preços</h2>
+      <h2 class="section-title">Comparador de preços</h2>
+      <div id="compareInlineMessage" class="compare-inline-message"></div>
+      <div class="compare-intro"><b>Regra de segurança:</b> a IA apenas lê e sugere. Nenhum preço de foto ou mensagem entra na comparação antes de você conferir e confirmar.</div>
 
       <div class="card">
-        <div class="compare-title-row">
-          <h3><i class="fa-solid fa-list-check"></i> 1. Lista solicitada</h3>
-          <div class="compare-toolbar">
-            <button class="btn line small" onclick="Comparator.loadBudgetParts()"><i class="fa-solid fa-file-import"></i> Usar peças do orçamento</button>
-            <button class="btn line small" onclick="Comparator.loadExample()"><i class="fa-solid fa-flask"></i> Carregar exemplo enviado</button>
-          </div>
-        </div>
-        <div class="compare-grid" style="margin-top:12px">
+        <h3><span class="compare-step">1</span> Lista que você está cotando</h3>
+        <div class="grid">
           <div class="col-4"><label>Veículo / aplicação</label><input id="compareVehicle" placeholder="Ex.: Uno 1.0 Way 2010 — quadrado"></div>
-          <div class="col-8"><label>Lista exatamente como foi solicitada</label><textarea id="compareRequestText" style="min-height:170px" placeholder="Cole a lista com uma peça por linha. O sistema preserva itens repetidos e marca dúvidas para conferência."></textarea></div>
+          <div class="col-8"><label>Uma peça por linha</label><textarea id="compareRequestText" style="min-height:150px" placeholder="Ex.:
+1 embreagem
+1 cabo de embreagem
+2 amortecedores dianteiros"></textarea></div>
         </div>
-        <div class="compare-toolbar" style="margin-top:10px">
-          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-wand-magic-sparkles"></i> Interpretar lista</button>
-          <button class="btn line" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Item manual</button>
+        <div class="compare-simple-actions" style="margin-top:10px">
+          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-list-check"></i> Carregar peças</button>
+          <button class="btn line" onclick="Comparator.loadBudgetParts()"><i class="fa-solid fa-file-import"></i> Usar peças do orçamento</button>
+          <button class="btn line" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Adicionar manualmente</button>
         </div>
-        <div id="compareGlobalBusy" class="compare-progress"><span class="compare-spinner"></span><span id="compareGlobalBusyText">Processando...</span></div>
-        <div class="compare-divider"></div>
-        <div id="compareRequestedList"></div>
+        <div style="margin-top:12px" id="compareRequestedList"></div>
       </div>
 
       <div class="card">
-        <div class="compare-title-row">
-          <h3><i class="fa-solid fa-truck-fast"></i> 2. Respostas dos fornecedores</h3>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+          <h3 style="margin-bottom:0"><span class="compare-step">2</span> Respostas dos fornecedores</h3>
           <button class="btn main" onclick="Comparator.addSupplier()"><i class="fa-solid fa-plus"></i> Adicionar fornecedor</button>
         </div>
-        <div class="help" style="margin:12px 0">
-          Cole a mensagem recebida ou envie a foto da tabela. O sistema separa marca, quantidade, preço unitário, total da linha, frete/ST e disponibilidade. Correspondências duvidosas ficam amarelas e não entram automaticamente na compra.
-        </div>
+        <p class="note" style="margin:10px 0 12px">Cole a mensagem ou envie a foto. Depois revise as linhas e toque em <b>CONFERI — USAR ESTES PREÇOS</b>.</p>
         <div id="compareSuppliers"></div>
       </div>
 
       <div class="card">
-        <div class="compare-title-row">
-          <h3><i class="fa-solid fa-scale-balanced"></i> 3. Comparação e plano de compra</h3>
-          <span id="compareSaveStatus" class="compare-muted">Comparação salva localmente</span>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+          <h3 style="margin-bottom:0"><span class="compare-step">3</span> Menores preços confirmados</h3>
+          <span id="compareSaveStatus" class="note">Salvo neste navegador</span>
         </div>
         <div id="compareResults" style="margin-top:12px"></div>
-      </div>
-
-      <div class="card no-print">
-        <h3><i class="fa-solid fa-database"></i> Backup da comparação</h3>
-        <div class="compare-toolbar">
-          <button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button>
-          <label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label>
-          <input id="compareImport" class="compare-json-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)">
-          <button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar comparação</button>
-        </div>
       </div>
     </section>
 
@@ -362,6 +348,6 @@
     };
     window.addEventListener('DOMContentLoaded',()=>App.init());
   </script>
-  <script src="js/comparador.js?v=1.0.0"></script>
+  <script src="js/comparador.js?v=2.0.0"></script>
 </body>
 </html>
