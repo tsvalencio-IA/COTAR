@@ -53,3 +53,7 @@ Foram acrescentados:
 - cache básico dos arquivos locais para abertura sem conexão após o primeiro carregamento
 
 No GitHub Pages, mantenha todos esses arquivos na mesma estrutura de pastas. O `start_url` e o `scope` são relativos, portanto funcionam dentro da pasta `/COTAR/`.
+
+## V9 — somente a marca no orçamento
+
+Ao usar **Levar menores ao orçamento**, o nome do fornecedor não é mais copiado para o orçamento do cliente. O campo, o Preview e o PDF exibem somente **Marca**. Itens já transferidos como `MARCA | FORNECEDOR` são corrigidos automaticamente quando correspondem à cotação atual.

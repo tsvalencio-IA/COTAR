@@ -93,3 +93,36 @@ V8 — PWA E ÍCONE INSTALÁVEL
 - Service Worker com cache dos arquivos locais e atualização pela rede.
 - Botão Instalar app com fluxo Android/Chrome e instrução específica para iPhone/iPad.
 - Nenhuma lógica do orçamento ou comparador foi removida.
+
+V9 — ORÇAMENTO MOSTRA SOMENTE A MARCA
+Data: 03/08/2026
+
+PROBLEMA COMPROVADO
+Ao usar “Levar menores ao orçamento”, o sistema preenchia o campo da peça com “MARCA | FORNECEDOR”, por exemplo:
+- VALEO | SAMA
+- MONROE | BARROS
+- AXIOS | FURLAN
+Quando a marca não estava informada, o sistema levava somente o nome do fornecedor, como “BARROS”.
+
+CORREÇÃO
+- O orçamento recebe somente a marca da peça.
+- O nome do fornecedor permanece somente dentro da comparação de preços.
+- Quando a marca não foi informada, o campo Marca fica vazio; o fornecedor não é usado como marca.
+- A tela de edição, o Preview e o PDF do orçamento passaram a exibir o título “Marca”, não “Marca/Fornecedor”.
+- Ao abrir a V9, itens já transferidos pela versão anterior são corrigidos automaticamente quando correspondem aos vencedores da cotação atual.
+- Itens manuais que não correspondem ao padrão gerado pelo comparador não são alterados.
+
+ARQUIVOS ALTERADOS NA V9
+- index.html
+- js/comparador.js
+- sw.js
+
+VALIDAÇÕES DA V9
+- sintaxe de js/comparador.js: aprovada;
+- sintaxe do JavaScript interno do index.html: aprovada;
+- sintaxe do Service Worker: aprovada;
+- “VALEO | SAMA” convertido para “VALEO”: aprovado;
+- fornecedor sem marca “BARROS” removido do campo Marca: aprovado;
+- item manual não relacionado preservado: aprovado;
+- nova transferência envia somente a marca: aprovado;
+- cache do PWA atualizado para v9.0.0.

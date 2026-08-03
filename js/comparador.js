@@ -1,5 +1,5 @@
 /*
-  Comparador de preços V7 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
+  Comparador de preços V9 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
@@ -104,11 +104,16 @@
       if(!this.$('secComparador')) return;
       this.load();
       this.ensureThreeSuppliers();
+      const cleanedBudgetParts=this.cleanSupplierNamesFromBudget();
       this.$('compareVehicle').value=this.state.vehicle||'';
       this.$('compareRequestText').value=this.state.requestText||'';
       this.$('compareVehicle').addEventListener('input',()=>{this.state.vehicle=this.$('compareVehicle').value;this.save();});
       this.$('compareRequestText').addEventListener('input',()=>{this.state.requestText=this.$('compareRequestText').value;this.save();});
       this.renderAll();
+      if(cleanedBudgetParts>0){
+        const notice=`${cleanedBudgetParts} peça(s) do orçamento foram corrigidas: o nome do fornecedor foi removido e somente a marca foi mantida.`;
+        this.startupNotice=this.startupNotice?`${this.startupNotice} ${notice}`:notice;
+      }
       if(this.startupNotice){
         const notice=this.startupNotice;
         this.startupNotice='';
@@ -1178,6 +1183,35 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         if(error?.name!=='AbortError')this.toast(error.message||'Não foi possível compartilhar o PDF.');
       }
     },
+    cleanSupplierNamesFromBudget(){
+      const app=this.app();
+      if(!app||!app.state||!Array.isArray(app.state.parts)||!app.state.parts.length)return 0;
+      let result;
+      try{result=this.computeResult();}catch(e){return 0;}
+      const winners=Array.isArray(result?.winners)?result.winners:[];
+      if(!winners.length)return 0;
+      let changed=0;
+      app.state.parts.forEach(part=>{
+        const current=String(part?.fornecedor||'').trim();
+        if(!current)return;
+        const partDescription=this.plain(part?.descricao||'');
+        const winner=winners.find(w=>{
+          if(this.plain(w?.description||'')!==partDescription)return false;
+          const supplier=String(w?.supplierName||'').trim();
+          const brand=String(w?.brand||'').trim();
+          const previous=[brand,supplier].filter(Boolean).join(' | ');
+          return this.plain(current)===this.plain(previous)||(!brand&&supplier&&this.plain(current)===this.plain(supplier));
+        });
+        if(!winner)return;
+        part.fornecedor=String(winner.brand||'').trim().toUpperCase();
+        changed++;
+      });
+      if(changed){
+        if(typeof app.renderAll==='function')app.renderAll();
+        if(typeof app.saveLocal==='function')app.saveLocal(false);
+      }
+      return changed;
+    },
     addWinnersToBudget(){
       const app=this.app(),result=this.computeResult();
       if(!app||typeof app.addPart!=='function'){this.toast('O orçamento principal não está disponível.');return;}
@@ -1187,7 +1221,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       const markup=Math.max(0,this.num(raw));
       const missingText=result.missing?` Existem ${result.missing} item(ns) ainda sem preço e eles não serão adicionados.`:'';
       if(!this.confirm(`Adicionar ${result.winners.length} peça(s) com menor preço ao orçamento, usando ${markup}% de acréscimo?${missingText}`))return;
-      result.winners.forEach(w=>app.addPart({descricao:w.description,qtd:w.requiredQty,valorUnit:w.unitCost*(1+markup/100),fornecedor:[w.brand,w.supplierName].filter(Boolean).join(' | '),cod:w.code||'',desc:0}));
+      result.winners.forEach(w=>app.addPart({descricao:w.description,qtd:w.requiredQty,valorUnit:w.unitCost*(1+markup/100),fornecedor:String(w.brand||'').trim(),cod:w.code||'',desc:0}));
       if(typeof app.saveLocal==='function')app.saveLocal(false);
       if(typeof app.show==='function')app.show('secItens');
       this.toast(`${result.winners.length} peça(s) adicionada(s) ao orçamento.`);
