@@ -1,107 +1,78 @@
-RELATÓRIO VERDADEIRO — COMPARADOR DE PREÇOS V2
+RELATÓRIO TÉCNICO — COMPARADOR DE PREÇOS V4
 Data: 03/08/2026
 
-1. FALHA REAL DA VERSÃO ANTERIOR
+1. OBJETIVO DESTA VERSÃO
 
-A leitura da foto enviava max_completion_tokens: 7000.
-A própria resposta da Groq exibida na tela informou:
-- limite da organização: 8000 tokens;
-- solicitação calculada: 10289 tokens.
+Transformar a comparação em uma visão direta:
+- uma linha para cada peça solicitada;
+- três colunas fixas de fornecedores;
+- marca, código, preço unitário, total e disponibilidade dentro de cada coluna;
+- menor preço completo destacado em verde;
+- estoque parcial destacado em amarelo;
+- peça não respondida identificada sem bloquear o restante;
+- PDF da comparação com a mesma lógica.
 
-Portanto, a requisição não poderia ser aceita nessa conta. A versão anterior não deveria ter sido declarada como funcional sem esse teste real.
+2. REGRA DE RESPOSTAS PARCIAIS
 
-Também havia um erro de integração na mensagem de falha: o comparador procurava window.App, porém o aplicativo principal declara App com const. Por isso, em determinadas situações, a mensagem caía em alert() do navegador, gerando a janela modal mostrada na captura.
+Cada fornecedor pode responder uma única peça, algumas peças ou a lista inteira.
+Somente as linhas conferidas e salvas entram na tabela e no PDF.
+Uma peça não respondida aparece como “NÃO RESPONDEU”.
+Estoque parcial não é considerado vencedor para a quantidade completa.
 
-2. CORREÇÕES APLICADAS
+3. TABELA COMPARATIVA
 
-Somente estes arquivos de funcionamento foram alterados:
+No computador, a tabela mostra:
+- peça e quantidade necessária;
+- Fornecedor 1;
+- Fornecedor 2;
+- Fornecedor 3;
+- melhor opção confirmada.
+
+No celular e tablet, a mesma informação passa automaticamente para cartões empilhados por peça, evitando uma tabela espremida.
+
+Quando um fornecedor informa mais de uma marca para a mesma peça, todas as alternativas são preservadas e exibidas.
+
+4. TOTAIS
+
+A tela mostra:
+- quantidade de peças da lista;
+- quantidade com algum preço completo;
+- quantidade ainda sem preço completo;
+- total da compra usando os menores preços confirmados;
+- cobertura e subtotal de cada fornecedor.
+
+Frete fixo é somado apenas uma vez por fornecedor utilizado no total combinado. Ele não é rateado artificialmente dentro do destaque individual de cada peça.
+
+5. PDF
+
+Foi acrescentado PDF em formato A4 paisagem com:
+- veículo/aplicação;
+- data e hora de geração;
+- três fornecedores lado a lado;
+- marca, preço unitário, total, código e disponibilidade;
+- destaque do menor preço completo;
+- resumo da compra pelos menores preços;
+- rodapé “Powered by thIAguinho Soluções Digitais”.
+
+Também existe opção de compartilhar o PDF quando o navegador aceita compartilhamento de arquivos. Caso contrário, o PDF é baixado para ser anexado manualmente.
+
+6. VALIDAÇÕES EXECUTADAS
+
+- sintaxe do JavaScript aprovada com node --check;
+- CSS analisado sem erros de sintaxe e com chaves balanceadas;
+- HTML sem IDs duplicados;
+- teste lógico automatizado com três fornecedores, marcas alternativas, peça não respondida e estoque parcial;
+- teste confirmou que estoque parcial não vence uma cotação completa;
+- teste confirmou a preservação de alternativas LUK e VALEO para a mesma peça;
+- estrutura do gerador de PDF validada com cinco colunas e múltiplas linhas;
+- prévia estática da matriz gerada para inspeção visual.
+
+Não foi realizada chamada real à API Groq nem teste de OCR online com a chave do projeto.
+
+7. ARQUIVOS FUNCIONAIS ALTERADOS
+
 - index.html
 - js/comparador.js
 - css/comparador.css
 
-Nenhuma rotina do orçamento principal, áudio, peças, serviços, dados, preview ou PDF foi removida.
-
-Correções técnicas:
-- max_completion_tokens da foto reduzido de 7000 para 1800;
-- segunda tentativa automática com imagem menor e 1000 tokens quando houver erro de tamanho/limite;
-- imagem reduzida antes do envio para no máximo 1200 px;
-- nova tentativa reduzida para 900 px;
-- JSON mode ativado na leitura da foto;
-- reasoning_effort definido como none para evitar consumo desnecessário;
-- prompt de foto reduzido e separado da lista solicitada;
-- erro de window.App corrigido sem modificar o aplicativo principal;
-- falhas agora usam aviso interno, sem a janela alert mostrada anteriormente;
-- nenhum dado é salvo quando a leitura da foto falha.
-
-3. FLUXO SIMPLIFICADO
-
-A tela possui apenas três etapas principais:
-1. carregar a lista solicitada;
-2. adicionar cada fornecedor e ler mensagem ou foto;
-3. visualizar os menores preços confirmados.
-
-Ferramentas secundárias ficaram recolhidas em "Ferramentas adicionais".
-
-4. REGRA DE VERACIDADE
-
-Nenhuma IA ou OCR pode garantir verdade absoluta ao ler uma fotografia.
-Por isso, a V2 não trata a leitura automática como verdade.
-
-Toda resposta lida fica com o status NÃO CONFERIDO.
-O usuário precisa revisar:
-- peça correspondente;
-- descrição;
-- marca;
-- quantidade disponível;
-- se o valor é unitário ou total;
-- preço;
-- frete/ST da linha;
-- código e observação, quando houver.
-
-Somente depois do botão "CONFERI — USAR ESTES PREÇOS" os valores entram na comparação.
-
-O sistema bloqueia a confirmação quando:
-- uma linha não foi ligada à peça solicitada;
-- a quantidade não foi informada;
-- o valor é ambíguo entre unitário e total;
-- o preço é zero ou inválido;
-- a soma das linhas não confere com o total final informado da foto.
-
-Linhas sem quantidade explícita permanecem com quantidade zero. Existe um botão opcional "Usar quantidades da lista", que só preenche essas quantidades após confirmação do usuário.
-
-5. CÁLCULOS
-
-A comparação usa somente fornecedores confirmados.
-Para cada peça, o sistema mostra:
-- fornecedor;
-- marca;
-- preço unitário efetivo;
-- total para a quantidade necessária;
-- menor preço confirmado;
-- estoque parcial;
-- indisponibilidade.
-
-O resumo calcula:
-- menores preços por item;
-- frete fixo contado uma vez por fornecedor usado;
-- fornecedor único mais barato, somente quando ele possui todos os itens.
-
-6. TESTES EXECUTADOS
-
-- sintaxe JavaScript aprovada com node --check;
-- HTML analisado sem IDs duplicados;
-- somente os três arquivos funcionais do comparador diferem da V1;
-- parser testado com as duas respostas em texto fornecidas;
-- "só tem 4" preservado como quantidade parcial;
-- "não vai" preservado como indisponível e valor zero;
-- preços sem "cada" e com quantidade maior que 1 permanecem ambíguos;
-- quantidades ausentes permanecem zero;
-- preenchimento voluntário pelas quantidades solicitadas testado;
-- bloqueio de confirmação por quantidade ausente testado;
-- bloqueio de confirmação por valor unitário/total ambíguo testado;
-- cálculo de menor preço, frete e fornecedor único testado;
-- payload da foto testado com 1800 tokens, JSON mode e reasoning none.
-
-7. LIMITE DO TESTE
-
-Não foi realizada uma chamada real usando a chave Groq da oficina, para não consumir cota nem utilizar uma credencial do usuário sem autorização expressa. A estrutura da requisição e o tratamento dos erros foram verificados localmente.
+As rotinas principais de áudio, orçamento, serviços, dados e PDF do orçamento original não foram reescritas.

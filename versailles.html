@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+<meta name="theme-color" content="#0284c7">
+<title>Scanner Alternativo Versailles 2.0 EFI — EEC-IV PRO Final</title>
+
+<style>
+:root{
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --primary:#0ea5e9;
+  --primary-dark:#0284c7;
+  --primary-bg:#e0f2fe;
+  --success:#16a34a;
+  --success-bg:#dcfce7;
+  --warning:#ea580c;
+  --warning-bg:#ffedd5;
+  --danger:#dc2626;
+  --danger-bg:#fee2e2;
+  --input:#f1f5f9;
+  --shadow:0 4px 20px rgba(0,0,0,.06);
+  --radius:16px;
+}
+
+[data-theme="dark"]{
+  --bg:#000000;
+  --card:#111827;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --border:#1f2937;
+  --primary:#38bdf8;
+  --primary-dark:#0ea5e9;
+  --primary-bg:#0c4a6e;
+  --success:#22c55e;
+  --success-bg:#064e3b;
+  --warning:#fb923c;
+  --warning-bg:#7c2d12;
+  --danger:#ef4444;
+  --danger-bg:#7f1d1d;
+  --input:#1e293b;
+  --shadow:0 4px 20px rgba(0,0,0,.45);
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:120px;
+}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+}
+
+.header-row{
+  max-width:720px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.header-info h1{
+  font-size:17px;
+  color:var(--primary);
+  line-height:1.2;
+}
+
+.header-info p{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
+
+.badge{
+  display:inline-block;
+  background:var(--danger);
+  color:#fff;
+  padding:2px 6px;
+  border-radius:5px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.7px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+}
+
+.icon-btn{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--bg);
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
+}
+
+.progress-bg{
+  width:100%;
+  height:5px;
+  background:var(--border);
+}
+
+.progress-fill{
+  height:100%;
+  width:0%;
+  background:var(--primary);
+  transition:.25s ease;
+}
+
+main{
+  max-width:720px;
+  margin:0 auto;
+  padding:16px;
+}
+
+.step{
+  display:none;
+  animation:up .22s ease;
+}
+
+.step.active{
+  display:block;
+}
+
+@keyframes up{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 15px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+}
+
+.step-badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:8px;
+  background:var(--primary-bg);
+  border:1px solid var(--primary);
+  color:var(--primary-dark);
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+
+h2{
+  font-size:20px;
+  line-height:1.25;
+  margin-bottom:10px;
+}
+
+h3{
+  font-size:16px;
+  margin:14px 0 8px;
+}
+
+.context{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.5;
+  margin-bottom:14px;
+}
+
+.alert{
+  padding:13px;
+  border-radius:11px;
+  margin:12px 0;
+  font-size:14px;
+  line-height:1.45;
+  font-weight:650;
+  border-left:4px solid transparent;
+}
+
+.info{
+  background:var(--primary-bg);
+  color:var(--primary-dark);
+  border-left-color:var(--primary);
+}
+
+.warn{
+  background:var(--warning-bg);
+  color:var(--warning);
+  border-left-color:var(--warning);
+}
+
+.danger{
+  background:var(--danger-bg);
+  color:var(--danger);
+  border-left-color:var(--danger);
+}
+
+.option-grid{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
+}
+
+.option{
+  width:100%;
+  min-height:62px;
+  border-radius:13px;
+  border:2px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  padding:14px;
+  text-align:left;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.option small{
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:550;
+  line-height:1.35;
+}
+
+.option.selected{
+  border-color:var(--primary);
+  background:var(--primary-bg);
+  color:var(--primary-dark);
+}
+
+.option.multi{
+  border-color:var(--warning);
+  background:var(--warning-bg);
+  color:var(--warning);
+}
+
+.option.skip{
+  border-style:dashed;
+  color:var(--muted);
+  background:transparent;
+}
+
+.measure{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:14px;
+  margin:14px 0;
+}
+
+@media(min-width:560px){
+  .measure{grid-template-columns:1fr 1fr}
+}
+
+.measure-title{
+  grid-column:1/-1;
+  color:var(--primary);
+  font-size:14px;
+  font-weight:900;
+}
+
+.group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.group.full{
+  grid-column:1/-1;
+}
+
+label{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:800;
+}
+
+input{
+  width:100%;
+  height:50px;
+  border-radius:11px;
+  border:1px solid var(--border);
+  background:var(--input);
+  color:var(--text);
+  padding:0 13px;
+  font-size:16px;
+  outline:none;
+  font-weight:650;
+}
+
+input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px var(--primary-bg);
+}
+
+.hint{
+  min-height:15px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:750;
+  line-height:1.35;
+}
+
+.good{color:var(--success)}
+.bad{color:var(--danger)}
+.mid{color:var(--warning)}
+
+.help-btn{
+  width:100%;
+  min-height:50px;
+  margin:8px 0 14px;
+  border-radius:12px;
+  border:2px solid var(--primary);
+  background:var(--primary-bg);
+  color:var(--primary-dark);
+  font-weight:900;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:100;
+  background:var(--card);
+  border-top:1px solid var(--border);
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  display:flex;
+  gap:10px;
+  box-shadow:0 -4px 14px rgba(0,0,0,.08);
+}
+
+.nav-btn{
+  flex:1;
+  height:56px;
+  border:none;
+  border-radius:13px;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.prev{
+  flex:.45;
+  background:var(--bg);
+  color:var(--text);
+  border:1px solid var(--border);
+}
+
+.next{
+  background:var(--primary);
+  color:#fff;
+}
+
+.analyze{
+  background:var(--success);
+  color:#fff;
+  display:none;
+}
+
+.report-box{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:17px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+}
+
+.hero{
+  background:var(--primary-bg);
+  border-color:var(--primary);
+  text-align:center;
+}
+
+.hero h2{
+  color:var(--primary-dark);
+}
+
+.tag{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:950;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.tag-real{background:var(--text);color:var(--bg)}
+.tag-hyp{background:#f3e8ff;color:#7e22ce;border:1px solid #c084fc}
+.tag-test{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning)}
+.tag-risk{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+.tag-ok{background:var(--success-bg);color:var(--success);border:1px solid var(--success)}
+
+ul{
+  padding-left:20px;
+  margin-top:8px;
+  font-size:14px;
+  line-height:1.5;
+}
+
+li{margin-bottom:6px}
+
+.data-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 0;
+  border-bottom:1px dashed var(--border);
+  font-size:14px;
+}
+
+.data-row b{
+  color:var(--primary);
+  text-align:right;
+}
+
+.bar{
+  height:9px;
+  background:var(--border);
+  border-radius:99px;
+  overflow:hidden;
+  margin:10px 0;
+}
+
+.bar div{
+  height:100%;
+  background:var(--primary);
+  border-radius:99px;
+}
+
+.cert{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+}
+
+.cert-high{background:var(--success)}
+.cert-med{background:var(--warning)}
+.cert-low{background:var(--muted)}
+.cert-block{background:var(--danger)}
+
+.action-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+
+.action{
+  min-height:50px;
+  border:none;
+  border-radius:11px;
+  color:#fff;
+  font-size:14px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.bg-copy{background:#25d366}
+.bg-print{background:#64748b}
+.bg-json{background:var(--primary-dark)}
+.bg-clear{background:var(--danger)}
+.bg-html{background:#7c3aed}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  z-index:300;
+  padding:14px;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal.active{
+  display:flex;
+}
+
+.modal-card{
+  width:100%;
+  max-width:620px;
+  max-height:90vh;
+  overflow:auto;
+  background:var(--card);
+  color:var(--text);
+  border-radius:16px;
+  padding:20px;
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:12px;
+}
+
+.close{
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  font-size:28px;
+  cursor:pointer;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  margin:10px 0 18px;
+}
+
+th,td{
+  border:1px solid var(--border);
+  padding:7px;
+  text-align:center;
+}
+
+th{
+  background:var(--input);
+}
+
+.footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  padding:14px;
+}
+
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  header,.bottom-nav,.action-grid,.help-btn,.footer{display:none!important}
+  .report-box,.card{box-shadow:none;border:1px solid #000;break-inside:avoid}
+  .step{display:none!important}
+  #screen-report{display:block!important}
+}
+</style>
+</head>
+
+<body data-theme="dark">
+
+<header>
+  <div class="header-row">
+    <div class="header-info">
+      <h1>Scanner Alternativo EEC-IV <span class="badge">PRO FINAL</span></h1>
+      <p>Versailles 2.0 EFI • FIC Autolatina • Spray → Pressão → 12 V → Pulso → Vazão</p>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" onclick="openRef()" title="Tabelas">📚</button>
+      <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Tema">☀️</button>
+    </div>
+  </div>
+</header>
+
+<div class="progress-bg"><div class="progress-fill" id="pb"></div></div>
+
+<main>
+
+<section class="step active" id="step-0">
+  <div class="card">
+    <span class="step-badge">Contexto técnico</span>
+    <h2>Ford Versailles 2.0 EFI 1994 — FIC EEC-IV multiponto</h2>
+
+    <div class="alert info">
+      <b>DADOS REAIS DO CASO:</b><br>
+      Veículo multiponto 4 bicos. Sensor identificado: <b>MTE-THOMSON 5041</b>, Plug Eletrônico de Ar / ACT/IAT, 2 pinos, corpo branco, rosca 3/8" x 18 NPTF, NTC.
+    </div>
+
+    <div class="alert warn">
+      Com o MTE 5041 conectado, o motor não pega bem. Com ele desconectado, pega com dificuldade. Regulador antigo estava estourado e foi trocado. Bomba, TPS e sensor de temperatura já foram trocados em algum momento. Bicos limpos; um gotejava antes e parou depois.
+    </div>
+
+    <div class="alert danger">
+      <b>DADO MAIS IMPORTANTE AGORA:</b><br>
+      O motor só pega quando é aplicado spray de combustível no TBI. Isso muda a hierarquia: primeiro testar falta de combustível pelos bicos, pressão, 12 V, pulso e vazão. O MTE 5041 vira hipótese secundária até existir prova elétrica.
+    </div>
+
+    <p class="context">
+      Esta ferramenta não condena peça. Ela organiza evidências, ensina onde medir, interpreta valores e gera laudo. Score significa prioridade de teste, não certeza absoluta.
+    </p>
+
+    <button class="option selected" style="text-align:center" onclick="changeStep(1)">Iniciar diagnóstico</button>
+  </div>
+</section>
+
+<section class="step" id="step-1">
+  <div class="card">
+    <span class="step-badge">1. Teste-chave</span>
+    <h2>O motor reage quando aplica spray de combustível no TBI?</h2>
+
+    <div class="alert danger">
+      Faça o teste com extremo cuidado. Não repita várias vezes. Há risco de retorno de chama, incêndio e mascaramento do defeito real.
+    </div>
+
+    <button class="help-btn" onclick="openGuide('spray')">🔧 Como interpretar esse teste</button>
+
+    <div class="option-grid">
+      <button class="option" data-key="sprayTbi" data-val="pegaMorre" onclick="setOne('sprayTbi','pegaMorre',this)">
+        Sim, pega e morre
+        <small>Forte evidência de que falta combustível real pelos bicos.</small>
+      </button>
+      <button class="option" data-key="sprayTbi" data-val="pegaEnquantoBorrifa" onclick="setOne('sprayTbi','pegaEnquantoBorrifa',this)">
+        Sim, pega enquanto borrifa
+        <small>Foco em pressão, alimentação dos bicos, pulso ou vazão.</small>
+      </button>
+      <button class="option" data-key="sprayTbi" data-val="naomuda" onclick="setOne('sprayTbi','naomuda',this)">
+        Não muda nada
+        <small>Foco muda para centelha, rotação/Hall, compressão ou sincronismo.</small>
+      </button>
+      <button class="option skip" data-key="sprayTbi" data-val="pular" onclick="setOne('sprayTbi','pular',this)">
+        Não testei
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-2">
+  <div class="card">
+    <span class="step-badge">2. Pressão</span>
+    <h2>Pressão de combustível na flauta</h2>
+
+    <button class="help-btn" onclick="openGuide('pressao')">🔧 Como testar pressão de verdade</button>
+
+    <div class="measure">
+      <div class="measure-title">Referência: 2,8 a 3,2 bar</div>
+      <div class="group">
+        <label>Pressão medida na flauta (bar)</label>
+        <input type="number" step="0.1" id="num_pressao" placeholder="Ex: 3.0" oninput="update()">
+        <div class="hint" id="hint_pressao"></div>
+      </div>
+    </div>
+
+    <h3>Pressão cai rápido após desligar?</h3>
+    <div class="option-grid">
+      <button class="option" data-key="pressaoCai" data-val="sim" onclick="setOne('pressaoCai','sim',this)">Sim, cai rápido</button>
+      <button class="option" data-key="pressaoCai" data-val="nao" onclick="setOne('pressaoCai','nao',this)">Não, mantém pressão</button>
+      <button class="option skip" data-key="pressaoCai" data-val="pular" onclick="setOne('pressaoCai','pular',this)">Não testei</button>
+    </div>
+
+    <h3>Sinais físicos atuais</h3>
+    <div class="option-grid">
+      <button class="option" data-key="combVis" data-val="oleoG" onclick="toggleMulti('combVis','oleoG',this)">Óleo subiu ou cheira gasolina</button>
+      <button class="option" data-key="combVis" data-val="vacuoM" onclick="toggleMulti('combVis','vacuoM',this)">Mangueira de vácuo do regulador molhada</button>
+      <button class="option" data-key="combVis" data-val="todasVelasM" onclick="toggleMulti('combVis','todasVelasM',this)">Todas as velas encharcadas</button>
+      <button class="option" data-key="combVis" data-val="umaVelaM" onclick="toggleMulti('combVis','umaVelaM',this)">Só uma ou duas velas molhadas</button>
+      <button class="option" data-key="combVis" data-val="tudoSeco" onclick="toggleMulti('combVis','tudoSeco',this)">Inspecionei: tudo seco / normal</button>
+      <button class="option skip" data-key="combVis" data-val="pular" onclick="toggleMulti('combVis','pular',this)">Não testei</button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-3">
+  <div class="card">
+    <span class="step-badge">3. Alimentação dos bicos</span>
+    <h2>Tem 12 V nos bicos com a chave ligada?</h2>
+
+    <button class="help-btn" onclick="openGuide('bicos')">🔧 Como medir 12 V e pulso dos bicos</button>
+
+    <div class="option-grid">
+      <button class="option" data-key="bicos12v" data-val="sim" onclick="setOne('bicos12v','sim',this)">
+        Sim, tem 12 V
+        <small>Alimentação positiva existe. Falta confirmar pulso negativo.</small>
+      </button>
+      <button class="option" data-key="bicos12v" data-val="nao" onclick="setOne('bicos12v','nao',this)">
+        Não, não tem 12 V
+        <small>Investigar fusível, relé da injeção, alimentação e chicote.</small>
+      </button>
+      <button class="option skip" data-key="bicos12v" data-val="pular" onclick="setOne('bicos12v','pular',this)">
+        Não testei
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-4">
+  <div class="card">
+    <span class="step-badge">4. Comando dos bicos</span>
+    <h2>Tem pulso nos bicos durante a partida?</h2>
+
+    <button class="help-btn" onclick="openGuide('bicos')">🔧 Como testar pulso negativo</button>
+
+    <div class="option-grid">
+      <button class="option" data-key="bicosPulso" data-val="sim" onclick="setOne('bicosPulso','sim',this)">
+        Sim, tem pulso
+        <small>Se pressão também está correta e só pega com spray, suspeitar vazão dos bicos.</small>
+      </button>
+      <button class="option" data-key="bicosPulso" data-val="nao" onclick="setOne('bicosPulso','nao',this)">
+        Não, não tem pulso
+        <small>Foco em sinal de rotação, UCE, aterramento, chicote ou comando. UCE por último.</small>
+      </button>
+      <button class="option" data-key="bicosPulso" data-val="soSemMte" onclick="setOne('bicosPulso','soSemMte',this)">
+        Só tem pulso com MTE 5041 desconectado
+        <small>Circuito do MTE/chicote/terra interfere no comando dos bicos.</small>
+      </button>
+      <button class="option skip" data-key="bicosPulso" data-val="pular" onclick="setOne('bicosPulso','pular',this)">
+        Não testei
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-5">
+  <div class="card">
+    <span class="step-badge">5. Vazão dos bicos</span>
+    <h2>Com pressão e comando, os bicos pulverizam?</h2>
+
+    <button class="help-btn" onclick="openGuide('vazao')">🔧 Como testar vazão e estanqueidade</button>
+
+    <div class="option-grid">
+      <button class="option" data-key="bicosVazao" data-val="ok" onclick="setOne('bicosVazao','ok',this)">
+        Vazão e pulverização OK
+        <small>Reduz suspeita de bico; procurar outro motivo para não pegar.</small>
+      </button>
+      <button class="option" data-key="bicosVazao" data-val="baixa" onclick="setOne('bicosVazao','baixa',this)">
+        Vazão baixa / jato fraco
+        <small>Bico pode estar obstruído mesmo após limpeza.</small>
+      </button>
+      <button class="option" data-key="bicosVazao" data-val="semVazao" onclick="setOne('bicosVazao','semVazao',this)">
+        Sem vazão
+        <small>Comando chega, mas combustível não sai pelo bico.</small>
+      </button>
+      <button class="option" data-key="bicosVazao" data-val="goteja" onclick="setOne('bicosVazao','goteja',this)">
+        Goteja / não veda
+        <small>Problema de estanqueidade pode afogar cilindro.</small>
+      </button>
+      <button class="option skip" data-key="bicosVazao" data-val="pular" onclick="setOne('bicosVazao','pular',this)">
+        Não testei em bancada
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-6">
+  <div class="card">
+    <span class="step-badge">6. MTE 5041 — comportamento</span>
+    <h2>O MTE 5041 ainda altera o defeito?</h2>
+
+    <button class="help-btn" onclick="openGuide('mte')">🔧 Como identificar e testar o MTE 5041</button>
+
+    <h3>Com MTE 5041 desconectado:</h3>
+    <div class="option-grid">
+      <button class="option" data-key="mteDesconectado" data-val="normal" onclick="setOne('mteDesconectado','normal',this)">Pega normal</button>
+      <button class="option" data-key="mteDesconectado" data-val="dificuldade" onclick="setOne('mteDesconectado','dificuldade',this)">Pega com dificuldade</button>
+      <button class="option" data-key="mteDesconectado" data-val="ameaca" onclick="setOne('mteDesconectado','ameaca',this)">Só ameaça</button>
+      <button class="option skip" data-key="mteDesconectado" data-val="naomuda" onclick="setOne('mteDesconectado','naomuda',this)">Não muda nada</button>
+    </div>
+
+    <h3>Com MTE 5041 conectado:</h3>
+    <div class="option-grid">
+      <button class="option" data-key="mteConectado" data-val="naopega" onclick="setOne('mteConectado','naopega',this)">Não pega</button>
+      <button class="option" data-key="mteConectado" data-val="pegaMorre" onclick="setOne('mteConectado','pegaMorre',this)">Pega e morre</button>
+      <button class="option" data-key="mteConectado" data-val="pegaFalhando" onclick="setOne('mteConectado','pegaFalhando',this)">Pega falhando</button>
+      <button class="option skip" data-key="mteConectado" data-val="naoTestado" onclick="setOne('mteConectado','naoTestado',this)">Não testado</button>
+    </div>
+
+    <h3>Sensor instalado é mesmo MTE 5041?</h3>
+    <div class="option-grid">
+      <button class="option" data-key="mteSensorCorreto" data-val="sim" onclick="setOne('mteSensorCorreto','sim',this)">Sim, confirmado</button>
+      <button class="option" data-key="mteSensorCorreto" data-val="naosei" onclick="setOne('mteSensorCorreto','naosei',this)">Não sei / não confirmei</button>
+      <button class="option" data-key="mteSensorCorreto" data-val="nao" onclick="setOne('mteSensorCorreto','nao',this)">Não, é outro sensor</button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-7">
+  <div class="card">
+    <span class="step-badge">7. MTE 5041 — medições</span>
+    <h2>Resistência, tensão e conector do MTE</h2>
+
+    <button class="help-btn" onclick="openGuide('mte')">🔧 Como medir de verdade</button>
+
+    <div class="measure">
+      <div class="measure-title">Sensor fora do chicote</div>
+      <div class="group">
+        <label>Temperatura ambiente aproximada (°C)</label>
+        <input type="number" step="1" id="num_mteTempAmb" placeholder="Ex: 25" oninput="update()">
+      </div>
+      <div class="group">
+        <label>Resistência MTE 5041 fora do chicote (Ω)</label>
+        <input type="number" step="1" id="num_mteOhm" placeholder="Ex: 3000" oninput="update()">
+        <div class="hint" id="hint_mteOhm"></div>
+      </div>
+
+      <div class="measure-title">Chicote com chave ligada</div>
+      <div class="group">
+        <label>Tensão com sensor desconectado (V)</label>
+        <input type="number" step="0.01" id="num_mteTensaoDesconectado" placeholder="Ex: 4.95" oninput="update()">
+      </div>
+      <div class="group">
+        <label>Tensão com sensor conectado (V)</label>
+        <input type="number" step="0.01" id="num_mteTensaoConectado" placeholder="Ex: 2.85" oninput="update()">
+        <div class="hint" id="hint_mteTensaoConectado"></div>
+      </div>
+    </div>
+
+    <h3>Estado do conector:</h3>
+    <div class="option-grid">
+      <button class="option" data-key="mteConector" data-val="firme" onclick="setOne('mteConector','firme',this)">Firme e limpo</button>
+      <button class="option" data-key="mteConector" data-val="oxidado" onclick="setOne('mteConector','oxidado',this)">Oxidado</button>
+      <button class="option" data-key="mteConector" data-val="frouxo" onclick="setOne('mteConector','frouxo',this)">Frouxo</button>
+      <button class="option" data-key="mteConector" data-val="emendado" onclick="setOne('mteConector','emendado',this)">Emendado</button>
+      <button class="option" data-key="mteConector" data-val="quebrado" onclick="setOne('mteConector','quebrado',this)">Fio quebrado</button>
+      <button class="option skip" data-key="mteConector" data-val="pular" onclick="setOne('mteConector','pular',this)">Não verifiquei</button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-8">
+  <div class="card">
+    <span class="step-badge">8. Terra dos sensores</span>
+    <h2>Como está o aterramento comum dos sensores?</h2>
+
+    <button class="help-btn" onclick="openGuide('terra')">🔧 Como testar terra de sensores</button>
+
+    <div class="alert info">
+      O terra de sensores pode afetar MTE 5041, TPS, MAP e ECT. Pinagem usada como referência deve ser confirmada no diagrama oficial pelo código da central/chicote.
+    </div>
+
+    <div class="measure">
+      <div class="group full">
+        <label>Queda de tensão do terra de sensores para negativo da bateria (V)</label>
+        <input type="number" step="0.01" id="num_terraQueda" placeholder="Ex: 0.03" oninput="update()">
+        <div class="hint" id="hint_terraQueda"></div>
+      </div>
+    </div>
+
+    <div class="option-grid">
+      <button class="option" data-key="terraVis" data-val="ok" onclick="setOne('terraVis','ok',this)">Terra visualmente firme</button>
+      <button class="option" data-key="terraVis" data-val="queda" onclick="setOne('terraVis','queda',this)">Oxidado / frouxo / suspeito</button>
+      <button class="option skip" data-key="terraVis" data-val="pular" onclick="setOne('terraVis','pular',this)">Não medi</button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-9">
+  <div class="card">
+    <span class="step-badge">9. TPS, VREF e ar</span>
+    <h2>Testes secundários que ainda podem interferir</h2>
+
+    <button class="help-btn" onclick="openGuide('tps')">🔧 Como testar TPS, VREF e IAC</button>
+
+    <div class="measure">
+      <div class="measure-title">TPS</div>
+      <div class="group">
+        <label>TPS fechado (V)</label>
+        <input type="number" step="0.01" id="num_tpsFechado" placeholder="0.5 a 1.0" oninput="update()">
+        <div class="hint" id="hint_tpsFechado"></div>
+      </div>
+      <div class="group">
+        <label>TPS meio curso (V)</label>
+        <input type="number" step="0.01" id="num_tpsMeio" placeholder="2.0 a 3.0" oninput="update()">
+      </div>
+      <div class="group">
+        <label>TPS aberto total (V)</label>
+        <input type="number" step="0.01" id="num_tpsAberto" placeholder="4.0 a 5.0" oninput="update()">
+      </div>
+      <div class="group">
+        <label>VREF MAP/TPS com plug ligado (V)</label>
+        <input type="number" step="0.01" id="num_vrefOn" placeholder="Perto de 5.0" oninput="update()">
+        <div class="hint" id="hint_vrefOn"></div>
+      </div>
+    </div>
+
+    <h3>Comportamento do TPS</h3>
+    <div class="option-grid">
+      <button class="option" data-key="tpsVis" data-val="ok" onclick="setOne('tpsVis','ok',this)">Sinal normal e subindo liso</button>
+      <button class="option" data-key="tpsVis" data-val="alto" onclick="setOne('tpsVis','alto',this)">Travado alto acima de 4 V fechado</button>
+      <button class="option" data-key="tpsVis" data-val="instavel" onclick="setOne('tpsVis','instavel',this)">Sinal pula / falha</button>
+      <button class="option skip" data-key="tpsVis" data-val="pular" onclick="setOne('tpsVis','pular',this)">Não medi</button>
+    </div>
+
+    <h3>O motor pega com acelerador levemente aberto?</h3>
+    <div class="option-grid">
+      <button class="option" data-key="ar" data-val="pega" onclick="setOne('ar','pega',this)">Sim, pega com pedal</button>
+      <button class="option" data-key="ar" data-val="naomudaPedal" onclick="setOne('ar','naomudaPedal',this)">Não muda nada</button>
+      <button class="option skip" data-key="ar" data-val="pular" onclick="setOne('ar','pular',this)">Não testei</button>
+    </div>
+  </div>
+</section>
+
+<section class="step" id="step-10">
+  <div class="card">
+    <span class="step-badge">10. Código lampejante</span>
+    <h2>Códigos da UCE EEC-IV</h2>
+
+    <button class="help-btn" onclick="openGuide('lampejante')">🔧 Como ler com segurança</button>
+
+    <div class="alert danger">
+      Confirme os pinos no diagrama oficial antes de jumpear. Ligação errada pode danificar a UCE. Código aponta circuito, não condena peça.
+    </div>
+
+    <div class="measure">
+      <div class="group full">
+        <label>Códigos obtidos, separados por vírgula</label>
+        <input type="text" id="num_codigos" placeholder="Ex: 11, 14, 53, 123" oninput="update()">
+      </div>
+    </div>
+
+    <button class="option skip selected" data-key="lampejante" data-val="pular" onclick="setOne('lampejante','pular',this)">Não fiz leitura / continuar</button>
+  </div>
+</section>
+
+<section class="step" id="screen-report">
+  <div id="report-content"></div>
+</section>
+
+</main>
+
+<div class="footer">Powered by thIAguinho Soluções Digitais • Ferramenta de apoio diagnóstico, não substitui medição presencial.</div>
+
+<div class="bottom-nav" id="navBar">
+  <button class="nav-btn prev" id="prevBtn" onclick="changeStep(-1)" style="display:none">Voltar</button>
+  <button class="nav-btn next" id="nextBtn" onclick="changeStep(1)">Avançar</button>
+  <button class="nav-btn analyze" id="analyzeBtn" onclick="generateReport()">Gerar laudo</button>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="modalTitle">Guia</h3>
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "scanner_versailles_eeciv_final_spray_v1";
+const LAST_STEP = 10;
+const REPORT_STEP = 11;
+const BRAND = "Powered by thIAguinho Soluções Digitais";
+
+let appState = {
+  step: 0,
+  theme: "dark",
+  btnAns: {},
+  numAns: {}
+};
+
+const TEMP_TABLE = [
+  [10,3.5,5870],
+  [20,3.1,3730],
+  [30,2.6,2430],
+  [40,2.1,1620],
+  [50,1.7,1100],
+  [60,1.3,770],
+  [70,1.0,540],
+  [80,0.8,380],
+  [90,0.6,280],
+  [100,0.5,210]
+];
+
+const CODE_MAP = {
+  "11":"Sistema OK / sem falhas estáticas registradas.",
+  "111":"Sistema OK / sem falhas registradas em leitura de três dígitos.",
+  "14":"Circuito de rotação/ignição: verificar distribuidor/Hall/sinal de rotação antes de condenar UCE.",
+  "18":"Circuito SPOUT/avanço: verificar chicote, módulo de ignição e conexão.",
+  "21":"Temperatura da água fora da faixa: testar sensor, conector e chicote.",
+  "116":"Temperatura da água fora da faixa: testar sensor, conector e chicote.",
+  "53":"TPS acima da faixa: testar TPS, terra, VREF e chicote.",
+  "123":"TPS acima da faixa: testar TPS, terra, VREF e chicote.",
+  "87":"Circuito da bomba de combustível: testar relé, alimentação, aterramento e pressão.",
+  "95":"Circuito da bomba/terra: testar chicote, relé e alimentação.",
+  "136":"Mistura pobre indicada: testar pressão, bicos, entrada falsa de ar e sonda.",
+  "137":"Mistura rica indicada: testar pressão, regulador, bicos vazando e temperatura."
+};
+
+function $(id){ return document.getElementById(id); }
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+}
+
+function init(){
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){
+    try{ appState = {...appState, ...JSON.parse(saved)}; }catch(e){}
+  }
+
+  document.body.setAttribute("data-theme", appState.theme || "dark");
+  $("themeBtn").textContent = appState.theme === "dark" ? "☀️" : "🌙";
+
+  Object.keys(appState.numAns || {}).forEach(id=>{
+    if($(id)) $(id).value = appState.numAns[id];
+  });
+
+  restoreButtons();
+  updateHints();
+
+  if(appState.step >= REPORT_STEP){
+    generateReport();
+  }else{
+    showStep(appState.step || 0);
+  }
+}
+
+function toggleTheme(){
+  appState.theme = appState.theme === "dark" ? "light" : "dark";
+  document.body.setAttribute("data-theme", appState.theme);
+  $("themeBtn").textContent = appState.theme === "dark" ? "☀️" : "🌙";
+  saveState();
+}
+
+function collectInputs(){
+  document.querySelectorAll("input").forEach(el=>{
+    appState.numAns[el.id] = el.value;
+  });
+}
+
+function update(){
+  collectInputs();
+  saveState();
+  updateHints();
+}
+
+function getNum(id){
+  const raw = appState.numAns[id];
+  if(raw === undefined || raw === null || String(raw).trim() === "") return null;
+  const n = Number(String(raw).replace(",","."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function setOne(key,val,btn){
+  appState.btnAns[key] = val;
+  btn.parentElement.querySelectorAll(".option").forEach(b=>b.classList.remove("selected","multi"));
+  btn.classList.add("selected");
+  saveState();
+}
+
+function toggleMulti(key,val,btn){
+  if(!Array.isArray(appState.btnAns[key])) appState.btnAns[key] = [];
+  const exclusive = ["pular","tudoSeco"];
+
+  if(exclusive.includes(val)){
+    appState.btnAns[key] = [val];
+    btn.parentElement.querySelectorAll(".option").forEach(b=>b.classList.remove("selected","multi"));
+    btn.classList.add("multi");
+    saveState();
+    return;
+  }
+
+  appState.btnAns[key] = appState.btnAns[key].filter(v=>!exclusive.includes(v));
+
+  exclusive.forEach(ex=>{
+    const exBtn = btn.parentElement.querySelector(`[data-key="${key}"][data-val="${ex}"]`);
+    if(exBtn) exBtn.classList.remove("selected","multi");
+  });
+
+  const idx = appState.btnAns[key].indexOf(val);
+  if(idx >= 0){
+    appState.btnAns[key].splice(idx,1);
+    btn.classList.remove("multi");
+  }else{
+    appState.btnAns[key].push(val);
+    btn.classList.add("multi");
+  }
+
+  if(appState.btnAns[key].length === 0) delete appState.btnAns[key];
+  saveState();
+}
+
+function restoreButtons(){
+  document.querySelectorAll(".option").forEach(b=>b.classList.remove("selected","multi"));
+  Object.keys(appState.btnAns || {}).forEach(key=>{
+    const val = appState.btnAns[key];
+    if(Array.isArray(val)){
+      val.forEach(v=>{
+        const b = document.querySelector(`[data-key="${key}"][data-val="${v}"]`);
+        if(b) b.classList.add("multi");
+      });
+    }else{
+      const b = document.querySelector(`[data-key="${key}"][data-val="${val}"]`);
+      if(b) b.classList.add("selected");
+    }
+  });
+}
+
+function showStep(index){
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+
+  if(index >= REPORT_STEP){
+    generateReport();
+    return;
+  }
+
+  const step = $("step-"+index);
+  if(!step){
+    generateReport();
+    return;
+  }
+
+  step.classList.add("active");
+  appState.step = index;
+  saveState();
+
+  $("pb").style.width = Math.round((index / LAST_STEP) * 100) + "%";
+  $("prevBtn").style.display = index > 0 ? "block" : "none";
+
+  if(index === LAST_STEP){
+    $("nextBtn").style.display = "none";
+    $("analyzeBtn").style.display = "block";
+  }else{
+    $("nextBtn").style.display = "block";
+    $("analyzeBtn").style.display = "none";
+  }
+
+  $("navBar").style.display = "flex";
+  window.scrollTo(0,0);
+}
+
+function changeStep(dir){
+  const next = appState.step + dir;
+  if(next >= 0 && next <= REPORT_STEP) showStep(next);
+}
+
+function resetAll(){
+  if(confirm("Apagar todas as respostas e reiniciar o diagnóstico?")){
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+}
+
+function setHint(id,text,cls){
+  const el = $(id);
+  if(!el) return;
+  el.textContent = text || "";
+  el.className = "hint " + (cls || "");
+}
+
+function nearestTempRow(temp){
+  let best = TEMP_TABLE[0];
+  TEMP_TABLE.forEach(r=>{
+    if(Math.abs(r[0]-temp) < Math.abs(best[0]-temp)) best = r;
+  });
+  return best;
+}
+
+function updateHints(){
+  const press = getNum("num_pressao");
+  if(press === null) setHint("hint_pressao","");
+  else if(press < 2.8) setHint("hint_pressao",`${press} bar abaixo da faixa. Prioridade: falta de pressão/vazão.`, "bad");
+  else if(press > 3.2) setHint("hint_pressao",`${press} bar acima da faixa. Prova atual de excesso/retorno/regulador.`, "bad");
+  else setHint("hint_pressao",`${press} bar dentro da faixa 2,8 a 3,2.`, "good");
+
+  const ohm = getNum("num_mteOhm");
+  const amb = getNum("num_mteTempAmb");
+  if(ohm === null) setHint("hint_mteOhm","");
+  else if(ohm > 20000) setHint("hint_mteOhm","Resistência muito alta: possível circuito aberto no sensor.", "bad");
+  else if(ohm < 20) setHint("hint_mteOhm","Resistência muito baixa: possível curto interno.", "bad");
+  else if(amb === null) setHint("hint_mteOhm","Informe a temperatura ambiente para comparar com a tabela.", "mid");
+  else{
+    const row = nearestTempRow(amb);
+    const diff = Math.abs(ohm-row[2])/row[2];
+    if(diff <= .20) setHint("hint_mteOhm",`Compatível com ~${row[0]}°C. Ref: ${row[2]} Ω.`, "good");
+    else if(diff <= .35) setHint("hint_mteOhm",`Levemente fora para ~${row[0]}°C. Ref: ${row[2]} Ω.`, "mid");
+    else setHint("hint_mteOhm",`Fora da tabela para ~${row[0]}°C. Ref: ${row[2]} Ω.`, "bad");
+  }
+
+  const mtv = getNum("num_mteTensaoConectado");
+  if(mtv === null) setHint("hint_mteTensaoConectado","");
+  else if(mtv >= 4.7) setHint("hint_mteTensaoConectado","Próximo de 5 V conectado: suspeita de circuito aberto/conector sem contato.", "bad");
+  else if(mtv <= .2) setHint("hint_mteTensaoConectado","Próximo de 0 V: suspeita de curto para terra.", "bad");
+  else setHint("hint_mteTensaoConectado","Tensão intermediária. Compare com temperatura e tabela.", "mid");
+
+  const terra = getNum("num_terraQueda");
+  if(terra === null) setHint("hint_terraQueda","");
+  else if(terra > .2) setHint("hint_terraQueda",`${terra} V alto. Terra de sensores comprometido.`, "bad");
+  else if(terra > .1) setHint("hint_terraQueda",`${terra} V suspeito. Repetir com consumidores ligados.`, "mid");
+  else setHint("hint_terraQueda",`${terra} V dentro do esperado.`, "good");
+
+  const tpsF = getNum("num_tpsFechado");
+  if(tpsF === null) setHint("hint_tpsFechado","");
+  else if(tpsF > 3.8) setHint("hint_tpsFechado","Sinal absurdo fechado: TPS/VREF/terra/chicote.", "bad");
+  else if(tpsF < .5 || tpsF > 1.0) setHint("hint_tpsFechado","Fora da referência 0,5 a 1,0 V.", "mid");
+  else setHint("hint_tpsFechado","TPS fechado dentro da referência.", "good");
+
+  const vref = getNum("num_vrefOn");
+  if(vref === null) setHint("hint_vrefOn","");
+  else if(vref < 4.5 || vref > 5.3) setHint("hint_vrefOn","VREF fora do esperado. Isolar TPS/MAP/chicote antes de UCE.", "bad");
+  else setHint("hint_vrefOn","VREF próxima de 5 V.", "good");
+}
+
+const GUIDES = {
+  spray:{
+    title:"Teste do spray no TBI",
+    html:`
+      <div class="alert danger"><b>RISCO:</b> spray de combustível pode causar retorno de chama e incêndio. Não repetir várias vezes.</div>
+      <h3>DADO REAL</h3>
+      <ul>
+        <li>Se o motor pega com spray, existe capacidade mínima de compressão e ignição naquele momento.</li>
+        <li>O foco principal vira combustível que deveria chegar pelos bicos.</li>
+      </ul>
+      <h3>Interpretação</h3>
+      <ul>
+        <li><b>Pega com spray:</b> medir pressão, 12 V nos bicos, pulso negativo e vazão.</li>
+        <li><b>Não muda com spray:</b> testar centelha, rotação/Hall, compressão e sincronismo.</li>
+      </ul>
+      <h3>Não trocar sem testar</h3>
+      <ul>
+        <li>Não trocar MTE 5041 só porque desconectar muda algo.</li>
+        <li>Não trocar bomba sem medir pressão e vazão.</li>
+        <li>Não trocar bicos sem medir 12 V, pulso, pressão e vazão.</li>
+      </ul>`
+  },
+  pressao:{
+    title:"Pressão de combustível",
+    html:`
+      <div class="alert danger"><b>RISCO:</b> combustível sob pressão. Sem cigarro, faísca ou lâmpada quente.</div>
+      <h3>Passo a passo</h3>
+      <ol>
+        <li>Despressurize com segurança.</li>
+        <li>Instale manômetro na flauta/linha.</li>
+        <li>Ligue a chave e observe pressão estática.</li>
+        <li>Dê partida e observe pressão durante a tentativa.</li>
+        <li>Desligue e veja se a pressão cai rápido.</li>
+      </ol>
+      <h3>Valores</h3>
+      <ul>
+        <li>Referência: <b>2,8 a 3,2 bar</b>.</li>
+        <li>Abaixo de 2,8: bomba, filtro, linha, regulador, alimentação da bomba ou retorno.</li>
+        <li>Acima de 3,2: regulador, retorno, aplicação errada ou restrição.</li>
+      </ul>`
+  },
+  bicos:{
+    title:"Alimentação e pulso dos bicos",
+    html:`
+      <div class="alert danger"><b>RISCO:</b> combustível e ignição geram risco de incêndio. Não faça teste com faísca perto de combustível. Use noid light, caneta de polaridade ou osciloscópio.</div>
+      <h3>Passo a passo</h3>
+      <ol>
+        <li>Desligar a chave.</li>
+        <li>Acessar conector de um bico.</li>
+        <li>Com chave ligada, medir se há 12 V em um dos terminais.</li>
+        <li>Durante a partida, verificar se o outro terminal recebe pulso negativo da UCE.</li>
+        <li>Repetir com MTE 5041 conectado e desconectado.</li>
+        <li>Se há 12 V e pulso, medir pressão e avaliar vazão dos bicos.</li>
+        <li>Se não há 12 V, investigar relé, fusível, alimentação e chicote.</li>
+        <li>Se há 12 V mas não há pulso, investigar sinal de rotação, aterramento da UCE, chicote e comando. UCE por último.</li>
+      </ol>
+      <h3>Interpretação</h3>
+      <ul>
+        <li>12 V + pulso + pressão correta + só pega com spray = suspeita de bicos sem vazão.</li>
+        <li>Sem 12 V = falha de alimentação elétrica dos bicos.</li>
+        <li>12 V e sem pulso = falha de comando, rotação, chicote, aterramento ou UCE por último.</li>
+        <li>Pulso só com MTE desconectado = MTE/chicote/terra interfere no comando dos bicos.</li>
+      </ul>
+      <h3>Não trocar sem testar</h3>
+      <ul>
+        <li>Não trocar bicos sem medir 12 V, pulso, pressão e vazão.</li>
+        <li>Não condenar UCE sem testar alimentação, aterramento, sinal de rotação e chicote.</li>
+        <li>Não trocar MTE 5041 apenas porque desconectá-lo muda a partida.</li>
+      </ul>`
+  },
+  vazao:{
+    title:"Vazão e estanqueidade dos bicos",
+    html:`
+      <div class="alert danger"><b>RISCO:</b> teste de bico envolve combustível pulverizado. Fazer em bancada apropriada.</div>
+      <h3>Passo a passo</h3>
+      <ol>
+        <li>Confirmar pressão na flauta.</li>
+        <li>Confirmar 12 V e pulso nos bicos.</li>
+        <li>Remover bicos para teste em bancada, se necessário.</li>
+        <li>Comparar volume pulverizado entre os 4 bicos.</li>
+        <li>Verificar estanqueidade: bico não pode gotejar fechado.</li>
+      </ol>
+      <h3>Interpretação</h3>
+      <ul>
+        <li>Pressão OK + comando OK + só pega com spray = suspeita forte de vazão insuficiente.</li>
+        <li>Um bico gotejando = risco de cilindro molhado e óleo contaminado.</li>
+        <li>Bico limpo não prova bico bom; vazão e estanqueidade precisam ser testadas.</li>
+      </ul>`
+  },
+  mte:{
+    title:"MTE 5041 — ACT/IAT",
+    html:`
+      <div class="alert warn"><b>Atenção:</b> com o dado do spray, o MTE 5041 só volta ao topo se houver medição absurda, tensão incoerente, terra ruim ou alteração comprovada no pulso dos bicos.</div>
+      <h3>Como testar</h3>
+      <ol>
+        <li>Desligar chave e desconectar o sensor.</li>
+        <li>Medir resistência entre os 2 pinos do sensor fora do chicote.</li>
+        <li>Comparar com tabela pela temperatura ambiente.</li>
+        <li>Com chave ligada, medir tensão no chicote desconectado.</li>
+        <li>Medir tensão com sensor conectado, se possível.</li>
+        <li>Inspecionar conector, oxidação, emendas e fios quebrados.</li>
+      </ol>
+      <h3>Valores</h3>
+      <ul>
+        <li>NTC: resistência cai quando aquece.</li>
+        <li>Perto de 0 Ω: curto.</li>
+        <li>Infinito/muito alto: circuito aberto.</li>
+        <li>5 V com sensor conectado: possível circuito aberto ou conector sem contato.</li>
+        <li>0 V com sensor conectado: possível curto para terra.</li>
+      </ul>`
+  },
+  terra:{
+    title:"Terra comum dos sensores",
+    html:`
+      <h3>Passo a passo</h3>
+      <ol>
+        <li>Chave ligada.</li>
+        <li>Multímetro em DC volts.</li>
+        <li>Ponta vermelha no terra de sensores.</li>
+        <li>Ponta preta no negativo da bateria.</li>
+        <li>Leia a queda de tensão.</li>
+      </ol>
+      <h3>Interpretação</h3>
+      <ul>
+        <li>Ideal: abaixo de 0,10 V.</li>
+        <li>Acima de 0,10 V: suspeito.</li>
+        <li>Acima de 0,20 V: problema forte.</li>
+        <li>Terra ruim falseia MTE, TPS, MAP e ECT.</li>
+      </ul>`
+  },
+  tps:{
+    title:"TPS, VREF e IAC",
+    html:`
+      <h3>TPS</h3>
+      <ul>
+        <li>Fechado: 0,5 a 1,0 V.</li>
+        <li>Meio curso: 2,0 a 3,0 V.</li>
+        <li>Aberto total: 4,0 a 5,0 V.</li>
+        <li>Subida deve ser lisa, sem pulos.</li>
+      </ul>
+      <h3>VREF</h3>
+      <ul>
+        <li>VREF MAP/TPS deve ficar perto de 5 V.</li>
+        <li>Se cair, isolar TPS, MAP e chicote. Não tratar IAC como sensor de 5 V.</li>
+      </ul>
+      <h3>IAC/ar</h3>
+      <ul>
+        <li>Se pega com pedal levemente aberto, pode faltar ar de bypass.</li>
+        <li>Isso não elimina falta de combustível se o motor só pega com spray.</li>
+      </ul>`
+  },
+  lampejante:{
+    title:"Código lampejante EEC-IV",
+    html:`
+      <div class="alert danger">Confirme a pinagem no diagrama oficial antes de jumpear. Ligação errada pode danificar a UCE.</div>
+      <ul>
+        <li>Código aponta circuito, não condena peça.</li>
+        <li>Confirmar com multímetro, pressão, pulso, aterramento e chicote.</li>
+        <li>UCE é sempre última hipótese.</li>
+      </ul>`
+  }
+};
+
+function openGuide(key){
+  const g = GUIDES[key];
+  if(!g) return;
+  $("modalTitle").textContent = g.title;
+  $("modalBody").innerHTML = g.html;
+  $("modal").classList.add("active");
+}
+
+function openRef(){
+  $("modalTitle").textContent = "Tabelas técnicas rápidas";
+  $("modalBody").innerHTML = `
+    <div class="alert warn">Pinagem e valores são referência de oficina. Confirme sempre no diagrama oficial pelo código da central/chicote.</div>
+    <h3>MTE-THOMSON 5041 — ACT/IAT</h3>
+    <table>
+      <tr><th>Item</th><th>Valor</th></tr>
+      <tr><td>Pinos</td><td>2</td></tr>
+      <tr><td>Cor</td><td>Branco</td></tr>
+      <tr><td>Rosca</td><td>3/8" x 18 NPTF</td></tr>
+      <tr><td>Código relacionado</td><td>0269061616</td></tr>
+      <tr><td>Tipo</td><td>NTC</td></tr>
+    </table>
+
+    <h3>Temperatura × tensão × resistência</h3>
+    <table>
+      <tr><th>°C</th><th>V</th><th>Ω</th></tr>
+      ${TEMP_TABLE.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}
+    </table>
+
+    <h3>Pressão</h3>
+    <table>
+      <tr><th>Condição</th><th>Valor</th></tr>
+      <tr><td>Marcha lenta / flauta</td><td>2,8 a 3,2 bar</td></tr>
+    </table>
+
+    <h3>TPS</h3>
+    <table>
+      <tr><th>Condição</th><th>Tensão</th></tr>
+      <tr><td>Fechado</td><td>0,5 a 1,0 V</td></tr>
+      <tr><td>Meio curso</td><td>2,0 a 3,0 V</td></tr>
+      <tr><td>Aberto total</td><td>4,0 a 5,0 V</td></tr>
+    </table>
+
+    <h3>Pinagem de referência</h3>
+    <table>
+      <tr><th>Pino</th><th>Função</th></tr>
+      <tr><td>25</td><td>Sinal ACT/IAT MTE 5041</td></tr>
+      <tr><td>46</td><td>Terra/retorno dos sensores</td></tr>
+      <tr><td>7</td><td>Sinal ECT água</td></tr>
+      <tr><td>26</td><td>VREF 5 V MAP/TPS</td></tr>
+      <tr><td>47</td><td>Sinal TPS</td></tr>
+      <tr><td>21</td><td>Comando atuador de lenta</td></tr>
+      <tr><td>58 / 59</td><td>Comando dos bicos em pares</td></tr>
+      <tr><td>56</td><td>Rotação / PMS / Hall conforme aplicação</td></tr>
+    </table>`;
+  $("modal").classList.add("active");
+}
+
+function closeModal(){
+  $("modal").classList.remove("active");
+}
+
+function add(h,key,pts,evid,interp){
+  if(!h[key]) return;
+  h[key].score += pts;
+  if(evid) h[key].evid.push(evid);
+  if(interp) h[key].interp.push(interp);
+}
+
+function combList(){
+  return Array.isArray(appState.btnAns.combVis) ? appState.btnAns.combVis : [];
+}
+
+function fieldsPresent(){
+  const b = appState.btnAns;
+  const c = combList();
+  return {
+    pressao: getNum("num_pressao") !== null,
+    pressaoAlta: getNum("num_pressao") !== null && getNum("num_pressao") > 3.2,
+    bicos12vTestado: !!(b.bicos12v && b.bicos12v !== "pular"),
+    bicosPulsoTestado: !!(b.bicosPulso && b.bicosPulso !== "pular"),
+    bicosVazaoTestado: !!(b.bicosVazao && b.bicosVazao !== "pular"),
+    mteOhm: getNum("num_mteOhm") !== null,
+    mteTensao: getNum("num_mteTensaoConectado") !== null || getNum("num_mteTensaoDesconectado") !== null,
+    terra: getNum("num_terraQueda") !== null,
+    tps: getNum("num_tpsFechado") !== null || getNum("num_tpsMeio") !== null || getNum("num_tpsAberto") !== null,
+    vref: getNum("num_vrefOn") !== null,
+    combustivelFisico: c.some(v=>["oleoG","vacuoM","todasVelasM","umaVelaM"].includes(v)),
+    oleoGasolina: c.includes("oleoG"),
+    vacuoMolhado: c.includes("vacuoM"),
+    velasMolhadas: c.includes("todasVelasM") || c.includes("umaVelaM"),
+    pressaoCai: b.pressaoCai === "sim"
+  };
+}
+
+const EVIDENCE_RULES = {
+  fuelLow:{ anyOf:["pressao"], message:"Certeza limitada: falta medir pressão de combustível na flauta." },
+  fuelCommand:{ anyOf:["bicos12vTestado","bicosPulsoTestado"], message:"Certeza limitada: falta testar presença de 12 V e pulso nos bicos durante a partida." },
+  fuelInjectors:{ anyOf:["pressao","bicos12vTestado","bicosPulsoTestado","bicosVazaoTestado"], message:"Certeza limitada: falta confirmar pressão, alimentação, pulso e/ou vazão dos bicos." },
+  mteSensor:{ anyOf:["mteOhm","mteTensao"], message:"Certeza limitada: falta medir resistência/tensão do MTE 5041." },
+  mteWiring:{ anyOf:["mteTensao","terra","bicosPulsoTestado"], message:"Certeza limitada: falta medir tensão, terra ou pulso comparando MTE conectado/desconectado." },
+  fuelExcess:{ anyOf:["pressaoAlta","oleoGasolina","vacuoMolhado","velasMolhadas","pressaoCai"], message:"Certeza limitada: excesso só sobe com prova atual, não por histórico antigo." },
+  ignicaoHall:{ anyOf:["bicosPulsoTestado"], message:"Certeza limitada: falta testar pulso/centelha/sinal de rotação." },
+  tpsFault:{ anyOf:["tps"], message:"Certeza limitada: falta medir TPS." },
+  vrefShort:{ anyOf:["vref"], message:"Certeza limitada: falta medir VREF." },
+  iacStuck:{ anyOf:[], message:"Certeza limitada: teste do pedal é funcional, mas não é medição elétrica do IAC." },
+  ecu:{ anyOf:[], message:"UCE é última hipótese. Não atinge certeza alta sem descartar alimentação, terra, rotação, bicos, sensores e chicote." }
+};
+
+function hasRuleEvidence(key,fp){
+  const rule = EVIDENCE_RULES[key];
+  if(!rule) return true;
+  if(rule.anyOf.length === 0) return false;
+  return rule.anyOf.some(f=>fp[f]);
+}
+
+function evaluateDiagnosis(){
+  const b = appState.btnAns;
+  const n = appState.numAns;
+  const c = combList();
+
+  const h = {
+    fuelLow:{
+      score:0,
+      title:"Falta de pressão/combustível chegando aos bicos",
+      desc:"O motor depende de combustível externo, então deve ser testada a chegada real de combustível na flauta/bicos.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Medir pressão de combustível na flauta. Referência: 2,8 a 3,2 bar.",
+        "Se pressão baixa: testar vazão da bomba, filtro, alimentação elétrica da bomba, linha e regulador.",
+        "Não assumir bomba boa só por ser nova."
+      ],
+      dont:"Não condenar bomba nova sem medir pressão e vazão.",
+      risco:"Partidas repetidas sem combustível podem forçar bomba e bateria."
+    },
+    fuelCommand:{
+      score:0,
+      title:"Bicos sem comando elétrico (sem 12 V ou sem pulso)",
+      desc:"O motor depende de combustível externo; os bicos podem estar sem alimentação positiva, sem pulso negativo da UCE ou com falha de chicote/comando.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Medir se há 12 V em um dos lados do conector dos bicos com chave ligada.",
+        "Testar pulso negativo com noid light, caneta de polaridade ou osciloscópio durante a partida.",
+        "Comparar o pulso com o MTE 5041 conectado e desconectado.",
+        "Verificar aterramento da UCE, sinal de rotação e alimentação da injeção."
+      ],
+      dont:"Não condenar UCE, relé, chicote ou bicos sem antes medir 12 V e pulso nos bicos.",
+      risco:"Não insistir em partidas repetidas com spray no TBI. Há risco de retorno de chama, incêndio e mascaramento do defeito real."
+    },
+    fuelInjectors:{
+      score:0,
+      title:"Bicos sem vazão/pulverização suficiente",
+      desc:"Mesmo com pressão e comando elétrico, os bicos podem não estar pulverizando combustível corretamente.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Confirmar pressão dentro da faixa.",
+        "Confirmar 12 V e pulso nos bicos.",
+        "Realizar teste de vazão e estanqueidade dos bicos em bancada."
+      ],
+      dont:"Não assumir que bico está bom só porque foi limpo.",
+      risco:"Não insistir em spray repetido no TBI para compensar falta de vazão."
+    },
+    mteSensor:{
+      score:0,
+      title:"MTE 5041 incorreto ou fora da curva",
+      desc:"O sensor ACT/IAT pode informar temperatura incoerente, mas só deve voltar ao topo com medição real.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Medir resistência do MTE 5041 fora do chicote e comparar com a tabela.",
+        "Medir tensão com sensor conectado.",
+        "Confirmar aplicação correta: 2 pinos, branco, rosca 3/8 x 18 NPTF."
+      ],
+      dont:"Não trocar MTE 5041 só porque desconectá-lo muda a partida.",
+      risco:"Nunca aplicar 12 V no circuito do sensor."
+    },
+    mteWiring:{
+      score:0,
+      title:"Chicote/terra do MTE 5041 interferindo no comando",
+      desc:"Curto, fuga, emenda, oxidação ou terra ruim pode alterar leitura de sensores ou até interferir no comando dos bicos.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Medir tensão do MTE conectado e desconectado.",
+        "Medir queda de terra dos sensores.",
+        "Testar continuidade do chicote até a UCE.",
+        "Comparar pulso dos bicos com MTE conectado/desconectado."
+      ],
+      dont:"Não condenar UCE antes de confirmar chicote, terra e alimentação.",
+      risco:"Evite pontes ou 12 V em linhas de sensor."
+    },
+    fuelExcess:{
+      score:0,
+      title:"Excesso de combustível atual",
+      desc:"Excesso só deve subir se houver prova atual: pressão alta, velas molhadas, combustível no vácuo do regulador ou óleo contaminado.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Medir pressão.",
+        "Verificar velas.",
+        "Verificar mangueira de vácuo do regulador.",
+        "Verificar óleo com cheiro de gasolina."
+      ],
+      dont:"Não assumir afogamento só pelo histórico antigo do regulador ou bico.",
+      risco:"Combustível no óleo pode danificar mancais e lavar cilindros."
+    },
+    ignicaoHall:{
+      score:0,
+      title:"Falha de ignição / rotação / Hall / TFI",
+      desc:"Sem sinal de rotação ou ignição, a UCE pode não comandar bicos e o motor pode não reagir ao spray.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Testar centelha com centelhador.",
+        "Testar sinal Hall/distribuidor durante a partida.",
+        "Verificar alimentação da bobina/módulo e aterramento da UCE."
+      ],
+      dont:"Não trocar módulo ou distribuidor sem teste de centelha e sinal.",
+      risco:"Alta tensão de ignição."
+    },
+    tpsFault:{
+      score:0,
+      title:"TPS fora de faixa ou instável",
+      desc:"TPS incoerente pode atrapalhar estratégia de partida, mas não deve ser prioridade sobre spray positivo sem medição.",
+      evid:[],
+      interp:[],
+      checks:["Medir TPS fechado, meio curso e aberto total."],
+      dont:"Não trocar TPS novo sem medir sinal, VREF e terra.",
+      risco:"Nenhum risco relevante além de curto por backprobe errado."
+    },
+    vrefShort:{
+      score:0,
+      title:"VREF 5 V MAP/TPS fora da faixa",
+      desc:"Curto no TPS, MAP ou chicote pode derrubar a referência de sensores.",
+      evid:[],
+      interp:[],
+      checks:["Medir VREF e isolar TPS/MAP/chicote."],
+      dont:"Não tratar IAC como sensor de 5 V; ele é atuador.",
+      risco:"Nunca aplicar 12 V na linha de 5 V."
+    },
+    iacStuck:{
+      score:0,
+      title:"Falta de ar de partida / IAC travado",
+      desc:"Falta de ar de bypass pode dificultar partida, mas se só pega com spray, combustível ainda é prioridade.",
+      evid:[],
+      interp:[],
+      checks:["Testar partida com pedal levemente aberto e verificar atuador de lenta."],
+      dont:"Não mexer no batente da borboleta para compensar defeito.",
+      risco:"Nenhum risco relevante."
+    },
+    ecu:{
+      score:0,
+      title:"UCE EEC-IV (última hipótese)",
+      desc:"Só considerar depois de testar alimentação, aterramento, pressão, 12 V, pulso, sensores e chicote.",
+      evid:[],
+      interp:[],
+      checks:[
+        "Testar alimentação da UCE sob carga.",
+        "Testar aterramentos principais.",
+        "Testar sinal de rotação.",
+        "Isolar sensores e chicote antes de condenar central."
+      ],
+      dont:"Nunca afirmar que a UCE está queimada sem prova.",
+      risco:"Troca de UCE sem prova custa caro e não resolve defeito de chicote."
+    }
+  };
+
+  const sprayPos = b.sprayTbi === "pegaMorre" || b.sprayTbi === "pegaEnquantoBorrifa";
+
+  if(sprayPos){
+    add(h,"fuelLow",70,"Motor pega com spray no TBI: forte evidência de falta de combustível pelos bicos.");
+    add(h,"fuelCommand",65,"Motor depende de combustível externo: testar pressão, 12 V nos bicos e pulso de injeção.");
+    add(h,"fuelInjectors",35,"Se houver pressão e pulso, os bicos podem estar sem vazão suficiente.");
+    h.mteSensor.score -= 20;
+    h.mteWiring.score -= 10;
+    h.fuelExcess.score -= 35;
+  }
+
+  if(b.sprayTbi === "naomuda"){
+    add(h,"ignicaoHall",35,"Spray no TBI não altera o comportamento: foco menor em falta simples de combustível.");
+  }
+
+  const press = getNum("num_pressao");
+  if(press !== null){
+    if(press < 2.8){
+      add(h,"fuelLow",80,`Pressão de ${press} bar abaixo de 2,8 bar.`);
+      add(h,"fuelCommand",-10);
+    }else if(press > 3.2){
+      add(h,"fuelExcess",75,`Pressão de ${press} bar acima de 3,2 bar.`);
+      add(h,"fuelLow",-20);
+    }else{
+      add(h,"fuelLow",-20,`Pressão de ${press} bar dentro da faixa 2,8 a 3,2 bar.`);
+      if(sprayPos) add(h,"fuelInjectors",15,"Pressão correta com spray positivo aumenta suspeita de comando/vazão.");
+    }
+  }
+
+  if(b.pressaoCai === "sim"){
+    add(h,"fuelExcess",25,"Pressão cai rápido após desligar: possível fuga, bico gotejando, regulador ou válvula de retenção.");
+    add(h,"fuelInjectors",20,"Queda de pressão exige teste de estanqueidade dos bicos.");
+  }
+
+  if(c.includes("oleoG")) add(h,"fuelExcess",90,"Óleo com cheiro de gasolina ou nível subindo.");
+  if(c.includes("vacuoM")) add(h,"fuelExcess",90,"Mangueira de vácuo do regulador molhada de combustível.");
+  if(c.includes("todasVelasM")) add(h,"fuelExcess",65,"Todas as velas encharcadas.");
+  if(c.includes("umaVelaM")){
+    add(h,"fuelInjectors",50,"Uma ou duas velas molhadas: suspeita de bico específico gotejando.");
+    add(h,"fuelExcess",30,"Uma ou duas velas molhadas indicam excesso localizado.");
+  }
+  if(c.includes("tudoSeco")) h.fuelExcess.score -= 20;
+
+  if(b.bicos12v === "nao"){
+    add(h,"fuelCommand",90,"Não há 12 V nos bicos com chave ligada.");
+    add(h,"fuelLow",-20);
+  }
+  if(b.bicos12v === "sim"){
+    add(h,"fuelCommand",15,"Há alimentação positiva nos bicos; falta confirmar pulso negativo.");
+  }
+
+  if(b.bicosPulso === "nao"){
+    add(h,"fuelCommand",90,"Não há pulso negativo nos bicos durante a partida.");
+    add(h,"ignicaoHall",35,"Sem pulso pode indicar falta de rotação/Hall ou comando da UCE.");
+  }
+  if(b.bicosPulso === "soSemMte"){
+    add(h,"fuelCommand",75,"Pulso dos bicos só aparece com o MTE 5041 desconectado.");
+    add(h,"mteWiring",65,"Circuito do MTE 5041 interfere diretamente no comando dos bicos.");
+  }
+  if(b.bicosPulso === "sim" && b.bicos12v === "sim"){
+    add(h,"fuelInjectors",35,"Há alimentação e pulso nos bicos; se a pressão estiver correta, suspeitar de vazão insuficiente.");
+    add(h,"fuelCommand",-20,"12 V e pulso presentes reduzem suspeita de comando elétrico.");
+  }
+
+  if(b.bicosPulso === "sim" && b.bicos12v === "sim" && press !== null && press >= 2.8 && press <= 3.2 && sprayPos){
+    add(h,"fuelInjectors",80,"Há pressão e comando nos bicos, mas o motor só pega com spray: suspeita forte de bicos sem vazão/pulverização.");
+  }
+
+  if(b.bicosVazao === "baixa") add(h,"fuelInjectors",85,"Teste de vazão indica bicos com vazão baixa.");
+  if(b.bicosVazao === "semVazao") add(h,"fuelInjectors",95,"Teste indica bicos sem vazão.");
+  if(b.bicosVazao === "goteja"){
+    add(h,"fuelInjectors",70,"Bico gotejando: falha de estanqueidade.");
+    add(h,"fuelExcess",60,"Bico gotejando pode causar excesso localizado e vela molhada.");
+  }
+  if(b.bicosVazao === "ok"){
+    h.fuelInjectors.score -= 50;
+    add(h,"fuelInjectors",0,"Vazão/pulverização informada como OK reduz suspeita de bicos.");
+  }
+
+  if(b.mteDesconectado === "dificuldade" && b.mteConectado === "naopega"){
+    add(h,"mteWiring",20,"Com MTE conectado não pega; desconectado pega com dificuldade. Só vira hipótese principal se houver medição ou alteração de pulso.");
+  }
+  if(b.mteSensorCorreto === "nao") add(h,"mteSensor",45,"Sensor instalado não corresponde visualmente ao MTE 5041.");
+  if(b.mteSensorCorreto === "naosei") add(h,"mteSensor",15,"Aplicação do MTE 5041 ainda não confirmada.");
+
+  const ohm = getNum("num_mteOhm");
+  const amb = getNum("num_mteTempAmb");
+  const mtvD = getNum("num_mteTensaoDesconectado");
+  const mtvC = getNum("num_mteTensaoConectado");
+
+  if(ohm !== null){
+    if(ohm > 20000) add(h,"mteSensor",90,`Resistência ${ohm} Ω: provável circuito aberto no sensor.`);
+    else if(ohm < 20) add(h,"mteSensor",90,`Resistência ${ohm} Ω: provável curto interno no sensor.`);
+    else if(amb !== null){
+      const row = nearestTempRow(amb);
+      const diff = Math.abs(ohm-row[2])/row[2];
+      if(diff > .35) add(h,"mteSensor",80,`Resistência ${ohm} Ω fora da tabela para ~${row[0]}°C. Referência ${row[2]} Ω.`);
+      else if(diff > .20) add(h,"mteSensor",35,`Resistência ${ohm} Ω levemente fora da referência para ~${row[0]}°C.`);
+      else{
+        h.mteSensor.score -= 20;
+        h.mteSensor.interp.push("Resistência do MTE compatível com a temperatura informada.");
+      }
+    }
+  }
+
+  if(mtvC !== null){
+    if(mtvC >= 4.7) add(h,"mteWiring",75,`Tensão com sensor conectado ${mtvC} V próxima de 5 V: circuito aberto/conector sem contato.`);
+    if(mtvC <= .2) add(h,"mteWiring",75,`Tensão com sensor conectado ${mtvC} V próxima de 0 V: curto para terra.`);
+  }
+  if(mtvD !== null && mtvD < 4.5) add(h,"mteWiring",45,`Tensão com sensor desconectado ${mtvD} V abaixo do esperado.`);
+
+  if(["oxidado","frouxo","emendado","quebrado"].includes(b.mteConector)){
+    add(h,"mteWiring",35,`Conector MTE 5041 relatado como ${b.mteConector}.`);
+  }
+
+  const terra = getNum("num_terraQueda");
+  if(terra !== null){
+    if(terra > .2) add(h,"mteWiring",70,`Queda de terra ${terra} V acima de 0,20 V.`);
+    else if(terra > .1) add(h,"mteWiring",35,`Queda de terra ${terra} V acima de 0,10 V.`);
+    else h.mteWiring.interp.push("Queda de terra dentro do esperado nesta medição.");
+  }
+  if(b.terraVis === "queda") add(h,"mteWiring",20,"Terra visualmente oxidado/frouxo/suspeito.");
+
+  const tF = getNum("num_tpsFechado");
+  const tM = getNum("num_tpsMeio");
+  const tA = getNum("num_tpsAberto");
+  if(tF !== null){
+    if(tF > 3.8) add(h,"tpsFault",80,`TPS fechado em ${tF} V: sinal absurdo.`);
+    else if(tF < .5 || tF > 1.0) add(h,"tpsFault",35,`TPS fechado em ${tF} V fora de 0,5 a 1,0 V.`);
+  }
+  if(tM !== null && (tM < 2.0 || tM > 3.0)) add(h,"tpsFault",20,`TPS meio curso ${tM} V fora de 2,0 a 3,0 V.`);
+  if(tA !== null && (tA < 4.0 || tA > 5.0)) add(h,"tpsFault",20,`TPS aberto total ${tA} V fora de 4,0 a 5,0 V.`);
+  if(b.tpsVis === "alto") add(h,"tpsFault",55,"TPS observado travado alto.");
+  if(b.tpsVis === "instavel") add(h,"tpsFault",40,"TPS observado instável.");
+
+  const vref = getNum("num_vrefOn");
+  if(vref !== null && (vref < 4.5 || vref > 5.3)){
+    add(h,"vrefShort",65,`VREF medida ${vref} V fora do esperado.`);
+    add(h,"mteWiring",20,"VREF fora da faixa pode indicar problema comum de chicote/terra/sensores.");
+  }
+
+  if(b.ar === "pega") add(h,"iacStuck",55,"Motor pega com pedal levemente aberto: possível falta de ar de bypass/IAC.");
+  if(b.ar === "naomudaPedal" && sprayPos) add(h,"fuelInjectors",10,"Pedal aberto não muda; com spray positivo, reforça caminho de combustível pelos bicos.");
+
+  const codes = String(n.num_codigos || "").trim();
+  const codeInterpretations = [];
+  if(codes){
+    codes.split(",").map(x=>x.trim()).filter(Boolean).forEach(code=>{
+      const txt = CODE_MAP[code] || "Código não cadastrado nesta tabela: consultar manual/diagrama e testar circuito.";
+      codeInterpretations.push(`${code}: ${txt}`);
+      if(code === "14") add(h,"ignicaoHall",30,`Código ${code}: circuito rotação/ignição.`);
+      if(code === "53" || code === "123") add(h,"tpsFault",30,`Código ${code}: TPS acima da faixa.`);
+      if(code === "87" || code === "95") add(h,"fuelLow",25,`Código ${code}: circuito da bomba/alimentação.`);
+      if(code === "137") add(h,"fuelExcess",20,`Código ${code}: mistura rica indicada.`);
+      if(code === "136") add(h,"fuelLow",15,`Código ${code}: mistura pobre indicada.`);
+    });
+  }
+
+  const fp = fieldsPresent();
+
+  Object.keys(h).forEach(key=>{
+    h[key].key = key;
+    h[key].score = Math.max(0, Math.min(99, Math.round(h[key].score)));
+    let cert = "Sem evidência";
+    let certClass = "cert-low";
+
+    if(h[key].score >= 80){
+      if(hasRuleEvidence(key,fp)){
+        cert = "Alta";
+        certClass = "cert-high";
+      }else{
+        cert = "Média (falta teste real)";
+        certClass = "cert-block";
+        h[key].downgradeMessage = EVIDENCE_RULES[key]?.message || "Falta evidência dura.";
+      }
+    }else if(h[key].score >= 50){
+      cert = "Média";
+      certClass = "cert-med";
+    }else if(h[key].score > 0){
+      cert = "Baixa";
+      certClass = "cert-low";
+    }
+
+    h[key].cert = cert;
+    h[key].certClass = certClass;
+  });
+
+  const results = Object.values(h)
+    .filter(x=>x.score > 0)
+    .sort((a,b)=>b.score-a.score);
+
+  return {
+    h,
+    results,
+    fp,
+    codeInterpretations
+  };
+}
+
+function nextTestSuggestion(){
+  const b = appState.btnAns;
+  const fp = fieldsPresent();
+  const press = getNum("num_pressao");
+  const sprayPos = b.sprayTbi === "pegaMorre" || b.sprayTbi === "pegaEnquantoBorrifa";
+
+  if(!b.sprayTbi || b.sprayTbi === "pular"){
+    return "Próximo teste: confirmar uma única vez, com extremo cuidado, se o motor reage ao spray no TBI. Não repetir várias vezes por risco de incêndio.";
+  }
+
+  if(sprayPos && !fp.pressao){
+    return "Próximo teste: medir pressão de combustível na flauta. Referência: 2,8 a 3,2 bar.";
+  }
+
+  if(sprayPos && press !== null && press < 2.8){
+    return "Pressão baixa: testar vazão da bomba, filtro de combustível, linha, alimentação elétrica da bomba e regulador.";
+  }
+
+  if(sprayPos && press !== null && press >= 2.8 && press <= 3.2 && !fp.bicos12vTestado){
+    return "Pressão OK. Próximo teste: medir se há 12 V nos bicos com chave ligada.";
+  }
+
+  if(sprayPos && press !== null && press >= 2.8 && press <= 3.2 && b.bicos12v === "nao"){
+    return "Sem 12 V nos bicos: verificar fusível, relé da injeção, alimentação positiva e chicote até os bicos.";
+  }
+
+  if(sprayPos && press !== null && press >= 2.8 && press <= 3.2 && b.bicos12v === "sim" && !fp.bicosPulsoTestado){
+    return "12 V presente. Próximo teste: testar pulso negativo dos bicos durante a partida, com MTE 5041 conectado e desconectado.";
+  }
+
+  if(b.bicosPulso === "nao"){
+    return "Sem pulso nos bicos: testar sinal de rotação/Hall, alimentação e aterramento da UCE, chicote e comando. UCE por último.";
+  }
+
+  if(b.bicosPulso === "soSemMte"){
+    return "Pulso só com MTE desconectado: medir resistência e tensão do MTE 5041, queda do terra de sensores e continuidade do chicote até a UCE.";
+  }
+
+  if(sprayPos && press !== null && press >= 2.8 && press <= 3.2 && b.bicos12v === "sim" && b.bicosPulso === "sim" && (!b.bicosVazao || b.bicosVazao === "pular")){
+    return "Pressão, 12 V e pulso presentes. Próximo teste: realizar teste de vazão e estanqueidade dos bicos em bancada.";
+  }
+
+  if(b.sprayTbi === "naomuda"){
+    return "Spray não altera o comportamento: testar centelha em todos os cilindros, sinal Hall/PMS, compressão e sincronismo.";
+  }
+
+  return "Seguir o teste de confirmação da hipótese principal no laudo.";
+}
+
+function urgencyText(diag){
+  const c = combList();
+  const b = appState.btnAns;
+  const h = diag.h;
+  const press = getNum("num_pressao");
+
+  if(c.includes("oleoG") || c.includes("vacuoM")){
+    return "ALTA: há indício de combustível onde não deveria. Não insistir na partida antes de verificar óleo, regulador, pressão e risco de incêndio.";
+  }
+
+  if(press !== null && press > 3.8){
+    return "ALTA: pressão muito acima da referência pode causar afogamento severo.";
+  }
+
+  if(b.sprayTbi === "pegaMorre" || b.sprayTbi === "pegaEnquantoBorrifa"){
+    return "MÉDIA/ALTA: veículo não deve circular. Evite repetição de spray no TBI por risco de retorno de chama e incêndio.";
+  }
+
+  if(h.fuelCommand.score >= 80){
+    return "MÉDIA: sem comando/alimentação dos bicos o motor não funciona; testar elétrico antes de trocar peças.";
+  }
+
+  return "MÉDIA: defeito de partida exige diagnóstico antes de novas tentativas prolongadas.";
+}
+
+function labelValue(key,val){
+  const labels = {
+    sprayTbi:{pegaMorre:"Pega e morre com spray",pegaEnquantoBorrifa:"Pega enquanto borrifa",naomuda:"Não muda com spray",pular:"Não testado"},
+    pressaoCai:{sim:"Sim, cai rápido",nao:"Não, mantém",pular:"Não testado"},
+    bicos12v:{sim:"Sim, tem 12 V",nao:"Não tem 12 V",pular:"Não testado"},
+    bicosPulso:{sim:"Sim, tem pulso",nao:"Não tem pulso",soSemMte:"Só tem pulso com MTE desconectado",pular:"Não testado"},
+    bicosVazao:{ok:"Vazão OK",baixa:"Vazão baixa",semVazao:"Sem vazão",goteja:"Goteja/não veda",pular:"Não testado"},
+    mteDesconectado:{normal:"Pega normal",dificuldade:"Pega com dificuldade",ameaca:"Só ameaça",naomuda:"Não muda"},
+    mteConectado:{naopega:"Não pega",pegaMorre:"Pega e morre",pegaFalhando:"Pega falhando",naoTestado:"Não testado"},
+    mteSensorCorreto:{sim:"Sim, confirmado",naosei:"Não sei",nao:"Não"},
+    mteConector:{firme:"Firme e limpo",oxidado:"Oxidado",frouxo:"Frouxo",emendado:"Emendado",quebrado:"Fio quebrado",pular:"Não verificado"},
+    terraVis:{ok:"Firme",queda:"Oxidado/frouxo/suspeito",pular:"Não medi"},
+    tpsVis:{ok:"Normal",alto:"Travado alto",instavel:"Instável",pular:"Não medi"},
+    ar:{pega:"Pega com pedal",naomudaPedal:"Não muda com pedal",pular:"Não testado"},
+    lampejante:{pular:"Não fiz leitura"},
+    combVis:{oleoG:"Óleo com gasolina",vacuoM:"Vácuo regulador molhado",todasVelasM:"Todas velas molhadas",umaVelaM:"Uma/duas velas molhadas",tudoSeco:"Tudo seco/normal",pular:"Não testado"}
+  };
+  return labels[key]?.[val] || val;
+}
+
+function buildMeasuredBox(){
+  const labels = {
+    num_pressao:"Pressão combustível",
+    num_mteTempAmb:"Temperatura ambiente",
+    num_mteOhm:"Resistência MTE",
+    num_mteTensaoDesconectado:"Tensão MTE desconectado",
+    num_mteTensaoConectado:"Tensão MTE conectado",
+    num_terraQueda:"Queda terra sensores",
+    num_tpsFechado:"TPS fechado",
+    num_tpsMeio:"TPS meio",
+    num_tpsAberto:"TPS aberto",
+    num_vrefOn:"VREF MAP/TPS",
+    num_codigos:"Códigos lampejantes"
+  };
+
+  let rows = "";
+  Object.keys(labels).forEach(id=>{
+    const v = appState.numAns[id];
+    if(v !== undefined && v !== null && String(v).trim() !== ""){
+      rows += `<div class="data-row"><span>${labels[id]}</span><b>${v}</b></div>`;
+    }
+  });
+
+  return `<div class="report-box"><span class="tag tag-real">Valores medidos</span>${rows || "<p class='context'>Nenhum valor numérico informado.</p>"}</div>`;
+}
+
+function buildAnswersBox(){
+  const names = {
+    sprayTbi:"Spray no TBI",
+    pressaoCai:"Pressão cai?",
+    combVis:"Sinais físicos combustível",
+    bicos12v:"12 V nos bicos",
+    bicosPulso:"Pulso dos bicos",
+    bicosVazao:"Vazão dos bicos",
+    mteDesconectado:"MTE desconectado",
+    mteConectado:"MTE conectado",
+    mteSensorCorreto:"Sensor é MTE 5041?",
+    mteConector:"Conector MTE",
+    terraVis:"Terra visual",
+    tpsVis:"TPS visual",
+    ar:"Teste pedal/IAC",
+    lampejante:"Código lampejante"
+  };
+
+  let rows = "";
+  Object.keys(appState.btnAns || {}).forEach(k=>{
+    const raw = appState.btnAns[k];
+    const shown = Array.isArray(raw) ? raw.map(v=>labelValue(k,v)).join(", ") : labelValue(k,raw);
+    rows += `<div class="data-row"><span>${names[k] || k}</span><b>${shown}</b></div>`;
+  });
+
+  return `<div class="report-box"><span class="tag tag-real">Observações marcadas</span>${rows || "<p class='context'>Nenhuma observação marcada.</p>"}</div>`;
+}
+
+function generateReport(){
+  collectInputs();
+  saveState();
+
+  const diag = evaluateDiagnosis();
+  const results = diag.results;
+  const main = results[0] || null;
+  const sprayPos = appState.btnAns.sprayTbi === "pegaMorre" || appState.btnAns.sprayTbi === "pegaEnquantoBorrifa";
+
+  document.querySelectorAll(".step").forEach(s=>s.classList.remove("active"));
+  $("screen-report").classList.add("active");
+  $("navBar").style.display = "none";
+  $("pb").style.width = "100%";
+  appState.step = REPORT_STEP;
+  saveState();
+
+  let html = `
+    <div class="report-box hero">
+      <h2>Laudo diagnóstico técnico</h2>
+      <p class="context">Versailles 2.0 EFI • FIC EEC-IV Autolatina • árvore por evidência</p>
+    </div>
+
+    <div class="report-box">
+      <span class="tag tag-real">DADO REAL</span>
+      <ul>
+        <li>Ford Versailles 2.0 EFI 1994, FIC EEC-IV Autolatina, multiponto 4 bicos.</li>
+        <li>Sensor identificado: MTE-THOMSON 5041, ACT/IAT, 2 pinos, branco, NTC.</li>
+        <li>Com MTE 5041 conectado, motor não pega bem; desconectado, pega com dificuldade.</li>
+        <li><b>Motor pega somente quando é aplicado spray de combustível no TBI.</b></li>
+        <li>Regulador antigo estava estourado e foi trocado.</li>
+        <li>Bomba, TPS e sensor de temperatura já foram trocados; isso não elimina chicote, conector, alimentação, terra ou aplicação errada.</li>
+        <li>Bicos foram limpos; um bico gotejava antes e parou depois.</li>
+      </ul>
+    </div>
+
+    <div class="report-box">
+      <span class="tag tag-risk">Urgência / risco</span>
+      <p style="font-size:15px;line-height:1.45;font-weight:800">${urgencyText(diag)}</p>
+    </div>
+  `;
+
+  if(main){
+    html += `
+      <div class="report-box">
+        <span class="tag tag-hyp">Hipótese principal</span>
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <h3 style="margin:0">${main.title}</h3>
+          <span class="cert ${main.certClass}">${main.cert}</span>
+        </div>
+        <p class="context" style="margin-top:8px">${main.desc}</p>
+        <div class="bar"><div style="width:${main.score}%"></div></div>
+        <p class="context"><b>Prioridade de teste:</b> ${main.score}/99. Isso não é porcentagem de certeza.</p>
+      </div>
+    `;
+
+    if(main.evid.length){
+      html += `
+        <div class="report-box">
+          <span class="tag tag-real">Evidências usadas</span>
+          <ul>${main.evid.map(e=>`<li>${e}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="report-box">
+        <span class="tag tag-test">Teste para confirmar ou eliminar</span>
+        <ul>${main.checks.map(c=>`<li>${c}</li>`).join("")}</ul>
+      </div>
+    `;
+
+    if(main.interp.length){
+      html += `
+        <div class="report-box">
+          <span class="tag tag-ok">Interpretação</span>
+          <ul>${main.interp.map(i=>`<li>${i}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    if(main.downgradeMessage){
+      html += `
+        <div class="report-box" style="border-left:4px solid var(--danger);background:var(--danger-bg)">
+          <span class="tag tag-risk">Certeza limitada</span>
+          <p style="font-weight:850;color:var(--danger)">${main.downgradeMessage}</p>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="report-box">
+        <span class="tag tag-risk">Não trocar sem testar</span>
+        <p style="font-weight:850;line-height:1.45">${main.dont}</p>
+      </div>
+
+      <div class="report-box">
+        <span class="tag tag-risk">Risco</span>
+        <p style="font-weight:750;line-height:1.45">${main.risco}</p>
+      </div>
+    `;
+  }else{
+    html += `
+      <div class="report-box">
+        <span class="tag tag-hyp">Sem conclusão</span>
+        <p>Faltam respostas ou medições. Comece pelo teste do spray, pressão, 12 V e pulso dos bicos.</p>
+      </div>
+    `;
+  }
+
+  if(results.length > 1){
+    html += `
+      <div class="report-box">
+        <span class="tag tag-hyp">Ranking de hipóteses</span>
+        ${results.slice(0,6).map(r=>`
+          <div style="border-bottom:1px dashed var(--border);padding:10px 0">
+            <div style="display:flex;justify-content:space-between;gap:10px">
+              <b>${r.title}</b>
+              <span class="cert ${r.certClass}">${r.cert}</span>
+            </div>
+            <div class="bar"><div style="width:${r.score}%"></div></div>
+            <p class="context" style="margin:0">Prioridade: ${r.score}/99</p>
+            ${r.evid.length ? `<ul>${r.evid.slice(0,3).map(e=>`<li>${e}</li>`).join("")}</ul>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  if(sprayPos){
+    html += `
+      <div class="report-box" style="border-left:4px solid var(--primary);background:var(--primary-bg)">
+        <span class="tag tag-test">Conclusão automática da árvore</span>
+        <p style="font-weight:850;line-height:1.5;color:var(--primary-dark)">
+          O dado do spray aponta primeiro para falta de combustível pelos bicos, falta de pressão, falta de 12 V, falta de pulso ou bicos sem vazão. 
+          O MTE 5041 só deve voltar ao topo se houver medição absurda do sensor, tensão incoerente, terra ruim ou alteração comprovada no pulso dos bicos ao conectar/desconectar o sensor.
+        </p>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="report-box">
+      <span class="tag tag-test">Próximo teste recomendado</span>
+      <p style="font-size:16px;line-height:1.5;font-weight:900">${nextTestSuggestion()}</p>
+    </div>
+  `;
+
+  html += buildMeasuredBox();
+  html += buildAnswersBox();
+
+  if(diag.codeInterpretations.length){
+    html += `
+      <div class="report-box">
+        <span class="tag tag-test">Códigos lampejantes</span>
+        <ul>${diag.codeInterpretations.map(c=>`<li>${c}</li>`).join("")}</ul>
+        <div class="alert warn">Código aponta circuito, não condena peça. Confirme no manual/diagrama oficial antes de decidir.</div>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="report-box">
+      <span class="tag tag-risk">Regra final</span>
+      <ul>
+        <li>Não trocar bomba nova sem medir pressão e vazão.</li>
+        <li>Não trocar bicos limpos sem teste de vazão e estanqueidade.</li>
+        <li>Não trocar MTE 5041 sem resistência, tensão, terra e chicote.</li>
+        <li>Não condenar UCE sem testar alimentação, aterramento, rotação, 12 V nos bicos, pulso e chicote.</li>
+        <li>Pinagem deve ser confirmada no diagrama oficial pelo código da central/chicote.</li>
+      </ul>
+    </div>
+
+    <div class="action-grid">
+      <button class="action bg-copy" onclick="copyReport()">📱 Copiar laudo</button>
+      <button class="action bg-print" onclick="window.print()">🖨️ Imprimir/PDF</button>
+      <button class="action bg-json" onclick="exportJSON()">💾 Exportar JSON</button>
+      <button class="action bg-html" onclick="downloadSelf()">⬇️ Baixar cópia HTML</button>
+      <button class="action bg-clear" onclick="resetAll()">🗑️ Limpar tudo</button>
+      <button class="action bg-print" onclick="appState.step=0;saveState();location.reload()">↩️ Revisar</button>
+    </div>
+  `;
+
+  $("report-content").innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+function getReportText(){
+  const diag = evaluateDiagnosis();
+  const main = diag.results[0];
+
+  let txt = "*LAUDO TÉCNICO - VERSAILLES 2.0 EFI EEC-IV*\n\n";
+  txt += "DADO REAL: motor pega somente quando é aplicado spray de combustível no TBI.\n";
+  txt += "Árvore aplicada: spray → pressão → 12 V nos bicos → pulso dos bicos → vazão → MTE/chicote/terra como secundário.\n\n";
+
+  if(main){
+    txt += `HIPÓTESE PRINCIPAL: ${main.title}\n`;
+    txt += `Nível de certeza: ${main.cert}\n`;
+    txt += `Prioridade de teste: ${main.score}/99\n`;
+    txt += `Descrição: ${main.desc}\n\n`;
+    if(main.evid.length) txt += "EVIDÊNCIAS:\n- " + main.evid.join("\n- ") + "\n\n";
+    txt += "TESTES PARA CONFIRMAR:\n- " + main.checks.join("\n- ") + "\n\n";
+    txt += "NÃO TROCAR SEM TESTAR:\n" + main.dont + "\n\n";
+    txt += "RISCO:\n" + main.risco + "\n\n";
+  }else{
+    txt += "Sem hipótese principal ainda. Faltam dados.\n\n";
+  }
+
+  txt += "PRÓXIMO TESTE: " + nextTestSuggestion() + "\n\n";
+  txt += BRAND;
+  return txt;
+}
+
+function copyReport(){
+  const txt = getReportText();
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>alert("Laudo copiado!"));
+  }else{
+    prompt("Copie o laudo:",txt);
+  }
+}
+
+function exportJSON(){
+  const data = {
+    appState,
+    diagnosis:evaluateDiagnosis(),
+    exportedAt:new Date().toISOString(),
+    brand:BRAND
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "diagnostico_versailles_eeciv.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadSelf(){
+  const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html],{type:"text/html;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "scanner_versailles_eeciv_final.html";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
+init();
+</script>
+
+</body>
+</html>

@@ -1,15 +1,15 @@
 /*
-  Comparador de preços V3 — fornecedores podem responder somente os itens que possuem.
+  Comparador de preços V4 — matriz visual com 3 fornecedores, comparação parcial e PDF.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v3',
-    LEGACY_KEYS: ['sos_comparador_precos_v2','sos_comparador_precos_v1'],
+    STORAGE_KEY: 'sos_comparador_precos_v4',
+    LEGACY_KEYS: ['sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 3,
+      version: 4,
       vehicle: '',
       requestText: '',
       requested: [],
@@ -17,6 +17,7 @@
     },
     busySuppliers: new Set(),
     imagePreviews: {},
+    lastComparisonPdfBlob: null,
 
     app(){
       try { return (typeof App !== 'undefined') ? App : null; }
@@ -63,7 +64,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:3,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:4,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -81,7 +82,7 @@
         }
         if(!raw) return;
         const parsed=JSON.parse(raw);
-        this.state=Object.assign(this.defaultState(),parsed||{}, {version:3});
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:4});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
         this.state.suppliers.forEach(s=>{
@@ -99,6 +100,7 @@
     init(){
       if(!this.$('secComparador')) return;
       this.load();
+      this.ensureThreeSuppliers();
       this.$('compareVehicle').value=this.state.vehicle||'';
       this.$('compareRequestText').value=this.state.requestText||'';
       this.$('compareVehicle').addEventListener('input',()=>{this.state.vehicle=this.$('compareVehicle').value;this.save();});
@@ -106,10 +108,28 @@
       this.renderAll();
     },
     renderAll(){
+      this.ensureThreeSuppliers();
       this.renderRequested();
       this.renderSuppliers();
       this.renderResults();
       this.save();
+    },
+    newSupplier(index){
+      return {
+        id:this.id('sup'),name:`FORNECEDOR ${index}`,freight:0,responseText:'',imageName:'',imagePreview:'',documentTotal:0,documentExtra:0,
+        draftOffers:[],offers:[],confirmed:false,confirmedAt:''
+      };
+    },
+    ensureThreeSuppliers(){
+      if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
+      while(this.state.suppliers.length<3) this.state.suppliers.push(this.newSupplier(this.state.suppliers.length+1));
+      if(this.state.suppliers.length>3) this.state.suppliers=this.state.suppliers.slice(0,3);
+      this.state.suppliers.forEach((s,index)=>{
+        if(!s.id) s.id=this.id('sup');
+        if(!String(s.name||'').trim()) s.name=`FORNECEDOR ${index+1}`;
+        s.draftOffers=Array.isArray(s.draftOffers)?s.draftOffers:[];
+        s.offers=Array.isArray(s.offers)?s.offers:[];
+      });
     },
 
     wordsToNumber(value){
@@ -204,20 +224,20 @@
     },
 
     addSupplier(){
-      const count=this.state.suppliers.length+1;
-      this.state.suppliers.push({
-        id:this.id('sup'),name:`FORNECEDOR ${count}`,freight:0,responseText:'',imageName:'',imagePreview:'',documentTotal:0,documentExtra:0,
-        draftOffers:[],offers:[],confirmed:false,confirmedAt:''
-      });
-      this.renderAll();
-      setTimeout(()=>this.$(`supplierText_${this.state.suppliers[this.state.suppliers.length-1].id}`)?.focus(),50);
+      this.ensureThreeSuppliers();
+      this.toast('A comparação foi organizada para exatamente 3 fornecedores.');
     },
     supplier(id){ return this.state.suppliers.find(s=>s.id===id); },
     removeSupplier(id){
       const s=this.supplier(id);if(!s)return;
-      if(!this.confirm(`Excluir ${s.name||'este fornecedor'} da comparação?`))return;
-      this.state.suppliers=this.state.suppliers.filter(x=>x.id!==id);
+      if(!this.confirm(`Limpar todos os preços e a resposta de ${s.name||'este fornecedor'}?`))return;
+      const index=this.state.suppliers.findIndex(x=>x.id===id);
+      const replacement=this.newSupplier(index+1);
+      replacement.name=s.name||`FORNECEDOR ${index+1}`;
+      this.state.suppliers.splice(index,1,replacement);
+      delete this.imagePreviews[id];
       this.renderAll();
+      this.toast(`${replacement.name} foi limpo.`);
     },
     updateSupplier(id,field,value){
       const s=this.supplier(id);if(!s)return;
@@ -676,10 +696,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     },
     renderSuppliers(){
       const box=this.$('compareSuppliers');if(!box)return;
-      if(!this.state.suppliers.length){
-        box.innerHTML='<div class="compare-empty">Adicione um fornecedor. Ele pode responder uma única peça ou apenas os itens que possui.</div>';
-        return;
-      }
+      this.ensureThreeSuppliers();
       box.innerHTML=this.state.suppliers.map((s,index)=>{
         const confirmed=s.confirmed;
         const confirmedRows=(s.offers||[]).map(o=>{
@@ -689,19 +706,19 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         }).join('');
         return `<div class="compare-supplier-card ${confirmed?'confirmed':''}">
           <div class="compare-supplier-head">
-            <div class="compare-supplier-name"><span>${index+1}</span><input aria-label="Nome do fornecedor" value="${this.attr(s.name)}" oninput="Comparator.updateSupplier('${s.id}','name',this.value)"></div>
-            <div class="compare-supplier-status ${confirmed?'ok':'wait'}"><i class="fa-solid ${confirmed?'fa-circle-check':'fa-clock'}"></i>${confirmed?'SALVO':'AGUARDANDO'}</div>
+            <div class="compare-supplier-name"><span>${index+1}</span><div class="compare-supplier-title"><small>FORNECEDOR ${index+1}</small><input aria-label="Nome do fornecedor ${index+1}" value="${this.attr(s.name)}" oninput="Comparator.updateSupplier('${s.id}','name',this.value);Comparator.renderResults()"></div></div>
+            <div class="compare-supplier-status ${confirmed?'ok':'wait'}"><i class="fa-solid ${confirmed?'fa-circle-check':'fa-clock'}"></i>${confirmed?`${s.offers.length} PREÇO(S) SALVO(S)`:'AGUARDANDO RESPOSTA'}</div>
           </div>
-          ${confirmed?`<div class="compare-success"><b>${s.offers.length} preço(s) deste fornecedor foram salvos.</b> Os itens que ele não respondeu não impedem a comparação.</div><div class="compare-confirmed-list">${confirmedRows}</div>
-          <div class="compare-simple-actions"><button class="btn line" onclick="Comparator.editSupplier('${s.id}')"><i class="fa-solid fa-pen"></i> Editar</button><button class="btn bad" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-trash"></i> Excluir</button></div>`:
+          ${confirmed?`<div class="compare-success"><b>Preços conferidos.</b> As peças que este fornecedor não respondeu aparecem como “não respondeu” na tabela.</div><div class="compare-confirmed-list">${confirmedRows||'<div class="compare-empty">Nenhum preço salvo.</div>'}</div>
+          <div class="compare-simple-actions"><button class="btn main" onclick="Comparator.editSupplier('${s.id}')"><i class="fa-solid fa-pen"></i> Adicionar ou editar preços</button><button class="btn line" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-broom"></i> Limpar fornecedor</button></div>`:
           `<div class="compare-source-controls">
-            <label>Resposta do fornecedor</label>
-            <textarea id="supplierText_${s.id}" class="compare-source" placeholder="Cole exatamente a mensagem recebida. Pode conter somente uma peça." oninput="Comparator.updateSupplier('${s.id}','responseText',this.value)">${this.esc(s.responseText||'')}</textarea>
+            <label>Resposta recebida</label>
+            <textarea id="supplierText_${s.id}" class="compare-source" placeholder="Cole somente o que este fornecedor respondeu. Pode ser apenas uma peça." oninput="Comparator.updateSupplier('${s.id}','responseText',this.value)">${this.esc(s.responseText||'')}</textarea>
             <div class="compare-simple-actions compare-read-actions">
               <button class="btn main" onclick="Comparator.processSupplierText('${s.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i> Interpretar mensagem</button>
               <label class="btn line" for="supplierImage_${s.id}"><i class="fa-solid fa-camera"></i> Ler foto</label>
               <input id="supplierImage_${s.id}" class="compare-file" type="file" accept="image/*" onchange="Comparator.processSupplierImage('${s.id}',this)">
-              <button class="btn bad compare-icon-btn" onclick="Comparator.removeSupplier('${s.id}')" title="Excluir fornecedor"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn line" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-broom"></i> Limpar</button>
             </div>
             <img id="supplierPreview_${s.id}" src="${this.attr(this.imagePreviews[s.id]||'')}" class="compare-image-preview ${this.imagePreviews[s.id]?'show':''}" alt="Prévia da cotação">
             <div id="supplierBusy_${s.id}" class="compare-progress"><span class="compare-spinner"></span><span id="supplierBusyText_${s.id}">Processando...</span></div>
@@ -751,35 +768,173 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       }).filter(p=>p.complete).sort((a,b)=>a.total-b.total);
       return {confirmed,items,winners,usedIds,mixedItems,mixedFreight,mixedTotal,singleBest:singlePlans[0]||null,missing:items.filter(x=>!x.winner).length};
     },
+    itemOffersForSupplier(item,supplier){
+      return (item.offers||[]).filter(o=>o.supplierId===supplier.id).sort((a,b)=>{
+        if(a.enough!==b.enough) return a.enough?-1:1;
+        if(a.partial!==b.partial) return a.partial?-1:1;
+        return (a.total||0)-(b.total||0);
+      });
+    },
+    offerOptionHTML(offer,winner){
+      const isWinner=!!winner && offer.supplierId===winner.supplierId && offer.source?.id===winner.source?.id;
+      const classes=['compare-matrix-option'];
+      if(isWinner) classes.push('best');
+      if(offer.partial) classes.push('partial');
+      if(offer.unavailable) classes.push('unavailable');
+      if(offer.unavailable){
+        return `<div class="${classes.join(' ')}"><div class="compare-option-top"><b>${this.esc(offer.brand||'SEM MARCA')}</b><span>NÃO TEM</span></div>${offer.note?`<small>${this.esc(offer.note)}</small>`:''}</div>`;
+      }
+      const stock=offer.partial?`SÓ TEM ${this.esc(offer.offeredQty)} DE ${this.esc(offer.requiredQty)}`:'';
+      return `<div class="${classes.join(' ')}">
+        <div class="compare-option-top"><b>${this.esc(offer.brand||'SEM MARCA INFORMADA')}</b>${isWinner?'<span class="compare-best-badge"><i class="fa-solid fa-trophy"></i> MAIS BARATO</span>':''}</div>
+        ${offer.code?`<small>Cód. ${this.esc(offer.code)}</small>`:''}
+        <div class="compare-option-prices"><span>${this.money(offer.unitCost)} <small>cada</small></span><strong>${this.money(offer.total)} <small>total</small></strong></div>
+        ${stock?`<div class="compare-stock-warning">${stock}</div>`:''}
+        ${offer.note?`<small class="compare-option-note">${this.esc(offer.note)}</small>`:''}
+      </div>`;
+    },
+    supplierMatrixCellHTML(item,supplier){
+      const offers=this.itemOffersForSupplier(item,supplier);
+      if(!supplier.confirmed) return '<div class="compare-cell-empty"><i class="fa-regular fa-clock"></i><b>AGUARDANDO</b><span>Nenhum preço salvo</span></div>';
+      if(!offers.length) return '<div class="compare-cell-empty"><i class="fa-solid fa-minus"></i><b>NÃO RESPONDEU</b><span>Esta peça não foi cotada</span></div>';
+      return offers.map(o=>this.offerOptionHTML(o,item.winner)).join('');
+    },
+    supplierCoverage(supplier,result){
+      let covered=0,total=0;
+      result.items.forEach(item=>{
+        const complete=this.itemOffersForSupplier(item,supplier).filter(o=>o.enough&&o.unitCost>0);
+        if(complete.length){covered++;total+=complete[0].total;}
+      });
+      return {covered,total:total+this.num(supplier.freight)};
+    },
     renderResults(){
       const box=this.$('compareResults');if(!box)return;
-      if(!this.state.requested.length){box.innerHTML='<div class="compare-empty">Carregue sua lista de peças para começar.</div>';return;}
+      if(!this.state.requested.length){box.innerHTML='<div class="compare-empty">Carregue a lista das peças. A tabela com os 3 fornecedores será criada automaticamente.</div>';return;}
+      this.ensureThreeSuppliers();
       const result=this.computeResult();
-      if(!result.confirmed.length){box.innerHTML='<div class="compare-empty">Ainda não há preços salvos. Um fornecedor pode responder somente uma peça: confira essa linha e salve normalmente.</div>';return;}
-      const summary=`<div class="compare-kpis">
-        <div class="compare-kpi"><span>Peças da sua lista</span><b>${this.state.requested.length}</b></div>
-        <div class="compare-kpi"><span>Fornecedores usados</span><b>${result.confirmed.length}</b></div>
-        <div class="compare-kpi ${result.missing?'warn':'good'}"><span>Ainda sem preço</span><b>${result.missing}</b></div>
-        <div class="compare-kpi good"><span>Menores já encontrados</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b></div>
+      const supplierSummaries=this.state.suppliers.map(s=>({supplier:s,...this.supplierCoverage(s,result)}));
+      const actions=`<div class="compare-result-actions">
+        <button class="btn ok" onclick="Comparator.generateComparisonPDF()" ${!result.confirmed.length?'disabled':''}><i class="fa-solid fa-file-pdf"></i> Gerar PDF da comparação</button>
+        <button class="btn line" onclick="Comparator.shareComparisonPDF()" ${!result.confirmed.length?'disabled':''}><i class="fa-solid fa-share-nodes"></i> Compartilhar PDF</button>
+        <button class="btn main" onclick="Comparator.addWinnersToBudget()" ${!result.winners.length?'disabled':''}><i class="fa-solid fa-cart-plus"></i> Levar menores ao orçamento</button>
       </div>`;
-      const plans=`<div class="compare-plan-simple">
-        <div><span>Somando os menores preços disponíveis</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b><small>${result.winners.length} de ${this.state.requested.length} item(ns) com preço; fretes fixos incluídos uma vez.</small></div>
-        <div><span>Fornecedor único com a lista completa</span><b>${result.singleBest?this.money(result.singleBest.total):'Ainda não existe'}</b><small>${result.singleBest?this.esc(result.singleBest.supplier.name):'É normal quando cada fornecedor responde apenas o que possui.'}</small></div>
+      const summary=`<div class="compare-kpis compare-kpis-visual">
+        <div class="compare-kpi"><span>Peças da lista</span><b>${this.state.requested.length}</b></div>
+        <div class="compare-kpi"><span>Com algum preço</span><b>${result.winners.length}</b></div>
+        <div class="compare-kpi ${result.missing?'warn':'good'}"><span>Sem preço completo</span><b>${result.missing}</b></div>
+        <div class="compare-kpi good"><span>Compra pelos menores</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b><small>Fretes fixos incluídos uma vez</small></div>
       </div>`;
-      const cards=result.items.map((item,index)=>{
-        const complete=item.complete.map((o,i)=>`<div class="compare-price-row ${i===0?'winner':''}">
-          <div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'SEM MARCA INFORMADA')}${o.code?' · '+this.esc(o.code):''}</span></div>
-          <div><span>${this.money(o.unitCost)} cada</span><b>${this.money(o.total)}</b></div>
-          ${i===0?'<em>MENOR PREÇO CONFERIDO</em>':''}
-        </div>`).join('');
-        const partial=item.partial.map(o=>`<div class="compare-price-row partial"><div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'SEM MARCA')} · informou somente ${this.esc(o.offeredQty)} un.</span></div><div><span>${this.money(o.unitCost)} cada</span><b>PARCIAL</b></div></div>`).join('');
-        const unavailable=item.unavailable.map(o=>`<div class="compare-price-row unavailable"><div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'')}</span></div><div><b>NÃO TEM</b></div></div>`).join('');
-        return `<div class="compare-result-card">
-          <div class="compare-result-title"><span>${index+1}</span><div><b>${this.esc(item.request.description)}</b><small>Você precisa de ${this.esc(item.request.qty)} unidade(s)</small></div></div>
-          ${complete||partial||unavailable||'<div class="compare-no-price">Nenhum fornecedor respondeu esta peça ainda.</div>'}
-        </div>`;
-      }).join('');
-      box.innerHTML=summary+plans+cards+`<details class="compare-more"><summary>Outras ações</summary><div class="compare-simple-actions"><button class="btn ok" onclick="Comparator.addWinnersToBudget()" ${!result.winners.length?'disabled':''}><i class="fa-solid fa-cart-plus"></i> Levar menores encontrados ao orçamento</button><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"><button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar comparação</button></div></details>`;
+      const supplierStrip=`<div class="compare-supplier-summary-strip">${supplierSummaries.map((x,index)=>`<div><span>${index+1}</span><section><b>${this.esc(x.supplier.name)}</b><small>${x.covered} de ${this.state.requested.length} peça(s) com preço completo${this.num(x.supplier.freight)>0?` · frete ${this.money(x.supplier.freight)}`:''}</small></section><strong>${x.covered?this.money(x.total):'—'}</strong></div>`).join('')}</div>`;
+      const header=`<div class="compare-matrix-row compare-matrix-head">
+        <div>PEÇA / QUANTIDADE</div>
+        ${this.state.suppliers.map((s,i)=>`<div><span>FORNECEDOR ${i+1}</span><b>${this.esc(s.name)}</b></div>`).join('')}
+        <div>MELHOR OPÇÃO</div>
+      </div>`;
+      const rows=result.items.map((item,index)=>`<div class="compare-matrix-row compare-matrix-body-row">
+        <div class="compare-piece-cell"><span>${index+1}</span><section><b>${this.esc(item.request.description)}</b><small>Quantidade necessária: ${this.esc(item.request.qty)}</small></section></div>
+        ${this.state.suppliers.map(s=>`<div class="compare-supplier-cell ${item.winner&&item.winner.supplierId===s.id?'has-best':''}">${this.supplierMatrixCellHTML(item,s)}</div>`).join('')}
+        <div class="compare-best-cell">${item.winner?`<i class="fa-solid fa-trophy"></i><b>${this.esc(item.winner.supplierName)}</b><span>${this.esc(item.winner.brand||'SEM MARCA')}</span><strong>${this.money(item.winner.total)}</strong><small>${this.money(item.winner.unitCost)} cada</small>`:'<i class="fa-solid fa-triangle-exclamation"></i><b>SEM PREÇO</b><span>Aguardando cotação completa</span>'}</div>
+      </div>`).join('');
+      const desktop=`<div class="compare-matrix-wrap"><div class="compare-matrix">${header}${rows}</div></div>`;
+      const mobile=`<div class="compare-mobile-list">${result.items.map((item,index)=>`<article class="compare-mobile-piece">
+        <header><span>${index+1}</span><section><b>${this.esc(item.request.description)}</b><small>Quantidade: ${this.esc(item.request.qty)}</small></section></header>
+        <div class="compare-mobile-suppliers">${this.state.suppliers.map((s,i)=>`<div class="compare-mobile-supplier ${item.winner&&item.winner.supplierId===s.id?'has-best':''}"><div class="compare-mobile-supplier-head"><span>FORNECEDOR ${i+1}</span><b>${this.esc(s.name)}</b></div>${this.supplierMatrixCellHTML(item,s)}</div>`).join('')}</div>
+        <footer>${item.winner?`<span><i class="fa-solid fa-trophy"></i> MELHOR: <b>${this.esc(item.winner.supplierName)}</b></span><strong>${this.money(item.winner.total)}</strong>`:'<span><i class="fa-solid fa-triangle-exclamation"></i> Nenhum preço completo</span>'}</footer>
+      </article>`).join('')}</div>`;
+      const notes=`<div class="compare-truth-note"><i class="fa-solid fa-circle-info"></i><div><b>Como o destaque é calculado</b><span>O verde marca o menor total confirmado para a quantidade completa da peça. Estoque parcial não vence. O frete fixo não é rateado por peça; ele é somado uma única vez no total “Compra pelos menores”.</span></div></div>`;
+      const extra=`<details class="compare-more"><summary>Backup e limpeza</summary><div class="compare-simple-actions"><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"><button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar tudo</button></div></details>`;
+      box.innerHTML=actions+summary+supplierStrip+desktop+mobile+notes+extra;
+    },
+    comparisonPdfName(){
+      const vehicle=(this.state.vehicle||'comparacao').replace(/[^a-zA-Z0-9À-ÿ]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60)||'comparacao';
+      return `Comparacao_Precos_${vehicle}.pdf`;
+    },
+    createComparisonPDF(){
+      const jsPDFClass=window.jspdf?.jsPDF;
+      if(!jsPDFClass || !jsPDFClass.API?.autoTable){throw new Error('Biblioteca de PDF não carregada.');}
+      const result=this.computeResult();
+      if(!result.confirmed.length) throw new Error('Ainda não existem preços conferidos para gerar o PDF.');
+      this.ensureThreeSuppliers();
+      const doc=new jsPDFClass('l','mm','a4');
+      const navy=[17,24,39],green=[22,101,52],lightGreen=[220,252,231],lightYellow=[255,251,235],lightRed=[254,242,242],gray=[100,116,139];
+      doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(...navy);doc.text('COMPARAÇÃO DE PREÇOS DE PEÇAS',14,14);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...gray);
+      doc.text(`Veículo / aplicação: ${this.state.vehicle||'Não informado'}`,14,20);
+      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`,14,25);
+      doc.text('Somente preços conferidos e salvos entram nesta comparação.',14,30);
+      const head=[['PEÇA / QTD',...this.state.suppliers.map((s,i)=>`FORNECEDOR ${i+1}\n${s.name}`),'MELHOR OPÇÃO']];
+      const body=result.items.map((item,index)=>{
+        const row=[{content:`${index+1}. ${item.request.description}\nQtd. necessária: ${item.request.qty}`,styles:{fontStyle:'bold',valign:'middle'}}];
+        this.state.suppliers.forEach(s=>{
+          const offers=this.itemOffersForSupplier(item,s);
+          if(!s.confirmed){row.push({content:'AGUARDANDO\nNenhum preço salvo',styles:{textColor:gray,valign:'middle'}});return;}
+          if(!offers.length){row.push({content:'NÃO RESPONDEU\nEsta peça não foi cotada',styles:{textColor:gray,valign:'middle'}});return;}
+          const hasWinner=offers.some(o=>item.winner&&o.supplierId===item.winner.supplierId&&o.source?.id===item.winner.source?.id);
+          const hasPartial=offers.some(o=>o.partial);
+          const onlyUnavailable=offers.every(o=>o.unavailable);
+          const text=offers.map(o=>{
+            if(o.unavailable) return `${o.brand||'SEM MARCA'} — NÃO TEM`;
+            const parts=[o.brand||'SEM MARCA',`${this.money(o.unitCost)} cada`,`${this.money(o.total)} total`];
+            if(o.code)parts.push(`Cód. ${o.code}`);
+            if(o.partial)parts.push(`PARCIAL: ${o.offeredQty} de ${o.requiredQty}`);
+            if(item.winner&&o.supplierId===item.winner.supplierId&&o.source?.id===item.winner.source?.id)parts.push('MAIS BARATO');
+            return parts.join(' | ');
+          }).join('\n\n');
+          const styles={valign:'middle'};
+          if(hasWinner){styles.fillColor=lightGreen;styles.textColor=green;styles.fontStyle='bold';}
+          else if(hasPartial){styles.fillColor=lightYellow;}
+          else if(onlyUnavailable){styles.fillColor=lightRed;}
+          row.push({content:text,styles});
+        });
+        row.push(item.winner?{content:`${item.winner.supplierName}\n${item.winner.brand||'SEM MARCA'}\n${this.money(item.winner.total)} total\n${this.money(item.winner.unitCost)} cada`,styles:{fillColor:lightGreen,textColor:green,fontStyle:'bold',valign:'middle'}}:{content:'SEM PREÇO COMPLETO',styles:{fillColor:lightRed,textColor:[153,27,27],fontStyle:'bold',valign:'middle'}});
+        return row;
+      });
+      doc.autoTable({
+        startY:35,head,body,theme:'grid',
+        headStyles:{fillColor:navy,textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',valign:'middle',cellPadding:2},
+        styles:{font:'helvetica',fontSize:6.5,cellPadding:2,lineColor:[203,213,225],lineWidth:.2,overflow:'linebreak'},
+        columnStyles:{0:{cellWidth:48},1:{cellWidth:54},2:{cellWidth:54},3:{cellWidth:54},4:{cellWidth:47}},
+        margin:{left:14,right:14,top:14,bottom:18},
+        rowPageBreak:'avoid'
+      });
+      let y=doc.lastAutoTable.finalY+7;
+      if(y>170){doc.addPage();y=16;}
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...navy);doc.text('RESUMO',14,y);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(0);
+      doc.text(`Itens com menor preço completo: ${result.winners.length} de ${this.state.requested.length}`,14,y+6);
+      doc.text(`Itens ainda sem preço completo: ${result.missing}`,14,y+11);
+      doc.setFont('helvetica','bold');doc.setTextColor(...green);doc.text(`Compra pelos menores preços: ${result.winners.length?this.money(result.mixedTotal):'—'}`,14,y+17);
+      doc.setFont('helvetica','normal');doc.setTextColor(...gray);doc.setFontSize(7);
+      doc.text(`Fretes fixos incluídos uma única vez: ${this.money(result.mixedFreight)}. O menor preço por peça não rateia frete fixo.`,14,y+23);
+      const pages=doc.internal.getNumberOfPages();
+      for(let i=1;i<=pages;i++){
+        doc.setPage(i);doc.setFontSize(7);doc.setTextColor(...gray);
+        doc.text(`Powered by thIAguinho Soluções Digitais — Página ${i}/${pages}`,148.5,205,{align:'center'});
+      }
+      return {doc,fileName:this.comparisonPdfName(),blob:doc.output('blob')};
+    },
+    generateComparisonPDF(){
+      try{
+        const pdf=this.createComparisonPDF();
+        this.lastComparisonPdfBlob=pdf.blob;
+        pdf.doc.save(pdf.fileName);
+        this.toast('PDF da comparação gerado.');
+      }catch(error){this.toast(error.message||'Não foi possível gerar o PDF da comparação.');}
+    },
+    async shareComparisonPDF(){
+      try{
+        const pdf=this.createComparisonPDF();
+        this.lastComparisonPdfBlob=pdf.blob;
+        const file=new File([pdf.blob],pdf.fileName,{type:'application/pdf'});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+          await navigator.share({title:'Comparação de preços',text:`Comparação de preços — ${this.state.vehicle||'veículo não informado'}`,files:[file]});
+        }else{
+          pdf.doc.save(pdf.fileName);
+          this.toast('O navegador não compartilha arquivos diretamente. O PDF foi baixado para você anexar.');
+        }
+      }catch(error){
+        if(error?.name!=='AbortError')this.toast(error.message||'Não foi possível compartilhar o PDF.');
+      }
     },
     addWinnersToBudget(){
       const app=this.app(),result=this.computeResult();
