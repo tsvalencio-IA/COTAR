@@ -1,14 +1,15 @@
 /*
-  Comparador de preços V2 — fluxo simples com conferência obrigatória.
+  Comparador de preços V3 — fornecedores podem responder somente os itens que possuem.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v2',
+    STORAGE_KEY: 'sos_comparador_precos_v3',
+    LEGACY_KEYS: ['sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 2,
+      version: 3,
       vehicle: '',
       requestText: '',
       requested: [],
@@ -62,7 +63,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:2,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:3,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -71,16 +72,24 @@
     },
     load(){
       try{
-        const raw=localStorage.getItem(this.STORAGE_KEY);
+        let raw=localStorage.getItem(this.STORAGE_KEY);
+        if(!raw){
+          for(const key of this.LEGACY_KEYS){
+            raw=localStorage.getItem(key);
+            if(raw) break;
+          }
+        }
         if(!raw) return;
         const parsed=JSON.parse(raw);
-        this.state=Object.assign(this.defaultState(),parsed||{});
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:3});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
         this.state.suppliers.forEach(s=>{
           s.draftOffers=Array.isArray(s.draftOffers)?s.draftOffers:[];
           s.offers=Array.isArray(s.offers)?s.offers:[];
           s.confirmed=!!s.confirmed;
+          s.draftOffers=s.draftOffers.map(o=>this.normalizeDraft(o));
+          s.offers=s.offers.map(o=>this.normalizeDraft(o));
         });
       }catch(e){
         console.warn('Falha ao carregar comparação',e);
@@ -213,6 +222,7 @@
     updateSupplier(id,field,value){
       const s=this.supplier(id);if(!s)return;
       s[field]=['freight','documentTotal','documentExtra'].includes(field)?this.num(value):value;
+      if(field==='responseText'&&s.confirmed){s.confirmed=false;s.offers=[];}
       if(field==='freight') this.renderResults();
       this.save();
     },
@@ -291,7 +301,7 @@
     },
     extractionPrompt(kind,text=''){
       return `Leia somente os dados visíveis desta cotação automotiva. Responda em JSON válido no formato ${JSON.stringify(this.extractionSchema())}.
-Regras: não invente; uma linha por produto; preserve marca/código; qty é somente a quantidade que estiver escrita e deve ser 0 quando não aparecer; qtyShown informa se a quantidade estava visível; priceType é unit, total, unknown ou unavailable; value é o preço conforme priceType; extra é frete/ST da linha; documentTotal é o total final exibido. Se não estiver legível, deixe zero/vazio e explique em note.${kind==='TEXT'?`\nTEXTO:\n${text}`:''}`;
+Regras: não invente; uma linha por produto; preserve marca/código; qty é somente a quantidade que estiver escrita e deve ser 0 quando não aparecer; a ausência de quantidade não significa falta de estoque; qtyShown informa se a quantidade estava visível; priceType é unit, total, unknown ou unavailable; value é o preço conforme priceType; extra é frete/ST da linha; documentTotal é o total final exibido. Se não estiver legível, deixe zero/vazio e explique em note.${kind==='TEXT'?`\nTEXTO:\n${text}`:''}`;
     },
     async groqText(prompt,key){
       const payload={
@@ -371,20 +381,16 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(!text){this.toast('Cole a resposta do fornecedor.');return;}
       if(!this.state.requested.length){this.toast('Primeiro carregue a lista solicitada.');return;}
       s.responseText=text;s.confirmed=false;s.offers=[];
-      this.setSupplierBusy(id,true,'Lendo a resposta...');
-      let parsed;
+      this.setSupplierBusy(id,true,'Interpretando a mensagem...');
       try{
-        const key=this.getGroqKey();
-        if(key){
-          const content=await this.groqText(this.extractionPrompt('TEXT',text),key);
-          parsed=this.normalizeParsed(this.extractJSON(content),'text');
-        }else parsed=this.parseOffersLocal(text);
+        const parsed=this.parseOffersLocal(text);
+        this.applyDraft(s,parsed,'text');
       }catch(e){
-        console.warn(e);
-        parsed=this.parseOffersLocal(text);
-        this.toast('A IA não concluiu. Foi feita leitura local; confira todas as linhas.');
+        console.error(e);
+        s.draftOffers=[];s.confirmed=false;s.offers=[];
+        this.renderAll();
+        this.toast('Não foi possível interpretar a mensagem. Nenhum preço foi salvo.');
       }finally{this.setSupplierBusy(id,false);}
-      this.applyDraft(s,parsed,'text');
     },
     async processSupplierImage(id,input){
       const s=this.supplier(id),file=input?.files?.[0];if(!s||!file)return;
@@ -424,15 +430,18 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     applyDraft(s,parsed,source){
       s.documentTotal=this.num(parsed?.documentTotal);
       s.documentExtra=this.num(parsed?.documentExtra);
-      s.draftOffers=(parsed?.rows||[]).map((o,i)=>{
+      const rows=parsed?.rows||[];
+      s.draftOffers=rows.map((o,i)=>{
         const row=this.normalizeDraft({...o,source,order:i});
-        row.requestedId=this.suggestRequestedId(row,i,(parsed?.rows||[]).length);
+        row.requestedId=this.suggestRequestedId(row,i,rows.length);
+        const req=this.state.requested.find(r=>r.id===row.requestedId);
+        if(row.priceType==='unknown' && (!row.qtyShown || (req&&this.num(req.qty)<=1))) row.priceType='unit';
         return row;
       });
       s.confirmed=false;s.offers=[];
       this.renderAll();
-      if(s.draftOffers.length) this.toast(`${s.draftOffers.length} linha(s) lida(s). Confira e confirme.`);
-      else this.toast('Nenhuma linha legível foi encontrada. Nenhum preço foi salvo.');
+      if(s.draftOffers.length) this.toast(`${s.draftOffers.length} preço(s) encontrado(s). Confira somente o que o fornecedor respondeu.`);
+      else this.toast('Nenhum preço legível foi encontrado. Nenhum dado foi salvo.');
     },
 
     normalizeMatch(value){
@@ -492,17 +501,22 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     },
     suggestRequestedId(offer,offerIndex,totalOffers){
       if(!this.state.requested.length)return '';
-      let best='',bestScore=0;
-      this.state.requested.forEach((r,i)=>{
+      const ranked=this.state.requested.map((r,i)=>{
         let score=this.matchScore(r,offer);
         if(this.concept(r.description)==='KIT' && this.concept(offer.description).startsWith('KIT')){
           const pa=this.state.requested.length>1?i/(this.state.requested.length-1):0;
           const pb=totalOffers>1?offerIndex/(totalOffers-1):0;
-          score+=Math.max(0,.25-Math.abs(pa-pb)*.25);
+          score+=Math.max(0,.12-Math.abs(pa-pb)*.12);
         }
-        if(score>bestScore){bestScore=score;best=r.id;}
-      });
-      return bestScore>=.55?best:'';
+        return {id:r.id,index:i,score,normalized:this.normalizeMatch(r.description),concept:this.concept(r.description)};
+      }).sort((a,b)=>b.score-a.score);
+      const best=ranked[0],second=ranked[1];
+      if(!best||best.score<.55)return '';
+      const sameDescription=this.state.requested.filter(r=>this.normalizeMatch(r.description)===best.normalized).length>1;
+      const generic=['KIT','RETENTOR'].includes(best.concept);
+      const tied=second&&Math.abs(best.score-second.score)<.08;
+      if(sameDescription||tied&&generic)return '';
+      return best.id;
     },
 
     updateDraft(id,offerId,field,value){
@@ -539,122 +553,160 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       if(!s.draftOffers.length)s.draftOffers=(s.offers||[]).map(o=>this.normalizeDraft({...o,id:this.id('off')}));
       s.confirmed=false;s.offers=[];this.renderAll();
     },
-    effectiveLine(o,qtyOverride=null){
+    effectiveLine(o,request=null){
       if(o.availability==='unavailable'||o.priceType==='unavailable')return 0;
-      const qty=Math.max(.0001,this.num(qtyOverride??o.qty));
-      const base=o.priceType==='unit'?this.num(o.value)*qty:this.num(o.value);
-      return base+this.num(o.extra);
+      const requestedQty=Math.max(.0001,this.num(request?.qty)||1);
+      const lineQty=Math.max(.0001,this.num(o.qty)||requestedQty);
+      const base=o.priceType==='unit'?this.num(o.value)*requestedQty:this.num(o.value);
+      const extra=this.num(o.extra);
+      return base+extra;
+    },
+    rowCheck(o){
+      const issues=[];
+      const request=this.state.requested.find(r=>r.id===o.requestedId)||null;
+      if(o.ignored) return {usable:false,issues:['Linha ignorada.'],request};
+      if(!request) issues.push('Escolha qual peça da sua lista corresponde a este preço.');
+      if(o.availability==='unavailable'||o.priceType==='unavailable'){
+        return {usable:!!request,issues,request,unavailable:true};
+      }
+      if(this.num(o.value)<=0) issues.push('Informe um preço válido.');
+      if(o.priceType==='unknown') issues.push('Escolha se o preço é unitário ou total.');
+      if(o.availability==='partial'&&this.num(o.qty)<=0) issues.push('Informe quantas unidades o fornecedor possui.');
+      return {usable:issues.length===0,issues,request,unavailable:false};
     },
     draftValidation(s){
-      const errors=[];
-      const active=(s.draftOffers||[]).filter(o=>!o.ignored);
-      if(!active.length)errors.push('Nenhuma linha está ativa.');
-      active.forEach((o,i)=>{
-        const n=i+1;
-        if(!o.requestedId)errors.push(`Linha ${n}: selecione a peça correspondente.`);
-        if(!o.description)errors.push(`Linha ${n}: descrição vazia.`);
-        if(o.availability!=='unavailable'&&o.priceType!=='unavailable'){
-          if(this.num(o.qty)<=0)errors.push(`Linha ${n}: quantidade inválida.`);
-          if(o.priceType==='unknown')errors.push(`Linha ${n}: informe se o valor é unitário ou total.`);
-          if(this.num(o.value)<=0)errors.push(`Linha ${n}: valor inválido.`);
-        }
+      const rows=(s.draftOffers||[]).filter(o=>!o.ignored);
+      const valid=[];
+      const pending=[];
+      rows.forEach((o,index)=>{
+        const check=this.rowCheck(o);
+        if(check.usable) valid.push(o);
+        else pending.push({row:o,index,issues:check.issues});
       });
+      const calculated=valid.reduce((sum,o)=>{
+        const request=this.state.requested.find(r=>r.id===o.requestedId);
+        return sum+this.effectiveLine(o,request);
+      },0);
       const doc=this.num(s.documentTotal);
-      const calculated=active.reduce((sum,o)=>sum+this.effectiveLine(o),0);
       const tolerance=Math.max(.10,doc*.002);
       const mismatch=doc>0&&Math.abs(calculated-doc)>tolerance;
-      if(mismatch)errors.push(`A soma das linhas (${this.money(calculated)}) não confere com o total da foto (${this.money(doc)}).`);
-      return {errors,active,calculated,mismatch};
+      return {rows,valid,pending,calculated,mismatch,documentTotal:doc};
     },
     confirmSupplier(id){
       const s=this.supplier(id);if(!s)return;
       const validation=this.draftValidation(s);
-      if(validation.errors.length){
-        this.toast(validation.errors[0]);
-        const box=this.$(`supplierErrors_${id}`);if(box){box.innerHTML=validation.errors.map(e=>`<div>${this.esc(e)}</div>`).join('');box.classList.add('show');}
+      if(!validation.valid.length){
+        this.toast('Ainda não existe nenhum preço pronto para salvar.');
+        this.renderDraftStatus(id,true);
         return;
       }
-      s.offers=validation.active.map(o=>this.normalizeDraft({...o,id:o.id}));
+      s.offers=validation.valid.map(o=>this.normalizeDraft({...o,id:o.id}));
       s.confirmed=true;s.confirmedAt=new Date().toISOString();
       this.renderAll();
-      this.toast(`${s.name}: preços confirmados e liberados para comparação.`);
+      const ignored=validation.pending.length;
+      this.toast(`${s.name}: ${s.offers.length} preço(s) salvo(s)${ignored?` e ${ignored} linha(s) não usada(s)`:''}.`);
     },
-    renderDraftStatus(id){
+    renderDraftStatus(id,showPending=false){
       const s=this.supplier(id);if(!s)return;
       const validation=this.draftValidation(s);
       const btn=this.$(`confirmSupplier_${id}`);
-      if(btn)btn.disabled=validation.errors.length>0;
+      if(btn){
+        btn.disabled=validation.valid.length===0;
+        btn.innerHTML=`<i class="fa-solid fa-check"></i> SALVAR ${validation.valid.length} PREÇO(S) CONFERIDO(S)`;
+      }
       const info=this.$(`supplierCheck_${id}`);
       if(info){
-        info.className='compare-check '+(validation.errors.length?'bad':'ok');
-        info.innerHTML=validation.errors.length?`<b>Falta conferir:</b> ${this.esc(validation.errors[0])}`:`<b>Conferência pronta.</b> Soma das linhas: ${this.money(validation.calculated)}`;
+        const pieces=[];
+        if(validation.valid.length) pieces.push(`<b>${validation.valid.length} preço(s) pronto(s).</b>`);
+        if(validation.pending.length) pieces.push(`${validation.pending.length} linha(s) ainda precisam de ajuste e não serão salvas.`);
+        if(validation.mismatch) pieces.push(`O total informado (${this.money(validation.documentTotal)}) difere da soma utilizável (${this.money(validation.calculated)}). Isso é apenas um aviso.`);
+        if(!pieces.length) pieces.push('Nenhum preço foi identificado.');
+        info.className='compare-check '+(validation.valid.length?'ok':'bad');
+        info.innerHTML=pieces.join(' ');
       }
-      const err=this.$(`supplierErrors_${id}`);if(err&&!validation.errors.length){err.innerHTML='';err.classList.remove('show');}
+      const err=this.$(`supplierErrors_${id}`);
+      if(err){
+        if((showPending||validation.valid.length===0)&&validation.pending.length){
+          err.innerHTML=validation.pending.map(p=>`<div><b>Linha ${p.index+1}:</b> ${this.esc(p.issues[0])}</div>`).join('');
+          err.classList.add('show');
+        }else{err.innerHTML='';err.classList.remove('show');}
+      }
     },
     requestedOptions(selected){
-      return `<option value="">SELECIONE A PEÇA</option><option value="__ignore" ${selected==='__ignore'?'selected':''}>IGNORAR ESTA LINHA</option>`+
+      return `<option value="">ESCOLHA A PEÇA</option><option value="__ignore" ${selected==='__ignore'?'selected':''}>NÃO USAR ESTA LINHA</option>`+
         this.state.requested.map((r,i)=>`<option value="${r.id}" ${selected===r.id?'selected':''}>${i+1}. ${this.esc(r.description)} — QTD ${this.esc(r.qty)}</option>`).join('');
     },
     renderDraftRows(s){
       if(!s.draftOffers.length)return '';
-      return `<div class="compare-review-title"><i class="fa-solid fa-shield-check"></i><div><b>Conferência obrigatória</b><span>Nada entra na comparação até você revisar e confirmar.</span></div></div>
+      return `<div class="compare-review-title"><i class="fa-solid fa-circle-check"></i><div><b>Confira somente os preços respondidos</b><span>O fornecedor não precisa cotar toda a lista. Uma única peça já pode ser salva.</span></div></div>
       <div id="supplierErrors_${s.id}" class="compare-errors"></div>
-      <div class="compare-review-list">${s.draftOffers.map((o,i)=>`<div class="compare-review-row ${o.ignored?'ignored':''}">
-        <div class="compare-review-head"><b>Linha ${i+1}</b><button class="btn bad small" onclick="Comparator.removeDraft('${s.id}','${o.id}')"><i class="fa-solid fa-trash"></i></button></div>
-        <div class="compare-review-grid">
-          <div class="span-12"><label>Qual peça da lista é esta?</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','requestedId',this.value==='__ignore'?'':this.value);Comparator.updateDraft('${s.id}','${o.id}','ignored',this.value==='__ignore')">${this.requestedOptions(o.ignored?'__ignore':o.requestedId)}</select></div>
-          <div class="span-8"><label>Descrição que o fornecedor informou</label><input value="${this.attr(o.description)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','description',this.value)"></div>
-          <div class="span-4"><label>Marca</label><input value="${this.attr(o.brand)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','brand',this.value)"></div>
-          <div class="span-3"><label>Qtd. disponível</label><input inputmode="decimal" value="${this.attr(o.qty)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','qty',this.value)"></div>
-          <div class="span-3"><label>O valor é</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','priceType',this.value)">
-            <option value="unknown" ${o.priceType==='unknown'?'selected':''}>CONFIRMAR</option>
-            <option value="unit" ${o.priceType==='unit'?'selected':''}>UNITÁRIO</option>
-            <option value="total" ${o.priceType==='total'?'selected':''}>TOTAL DA LINHA</option>
-            <option value="unavailable" ${o.priceType==='unavailable'?'selected':''}>NÃO TEM</option>
-          </select></div>
-          <div class="span-3"><label>Valor</label><input inputmode="decimal" value="${this.attr(o.value)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','value',this.value)"></div>
-          <div class="span-3"><label>Frete/ST da linha</label><input inputmode="decimal" value="${this.attr(o.extra)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','extra',this.value)"></div>
-          <div class="span-6"><label>Código (opcional)</label><input value="${this.attr(o.code)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','code',this.value)"></div>
-          <div class="span-6"><label>Observação</label><input value="${this.attr(o.note)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','note',this.value)"></div>
-        </div>
-        ${o.rawLine?`<div class="compare-source-line"><b>Original:</b> ${this.esc(o.rawLine)}</div>`:''}
-      </div>`).join('')}</div>
-      <div class="compare-simple-actions" style="margin-top:9px"><button class="btn line" onclick="Comparator.fillRequestedQuantities('${s.id}')"><i class="fa-solid fa-list-ol"></i> Usar quantidades da lista</button><button class="btn line" onclick="Comparator.addDraft('${s.id}')"><i class="fa-solid fa-plus"></i> Adicionar linha manual</button></div>
-      <div class="compare-document-check">
-        <div><label>Total final mostrado na foto (opcional)</label><input inputmode="decimal" value="${this.attr(s.documentTotal||'')}" placeholder="0,00" oninput="Comparator.updateSupplier('${s.id}','documentTotal',this.value);Comparator.renderDraftStatus('${s.id}')"></div>
-        <div id="supplierCheck_${s.id}" class="compare-check"></div>
-      </div>
-      <button id="confirmSupplier_${s.id}" class="btn ok block compare-confirm" onclick="Comparator.confirmSupplier('${s.id}')"><i class="fa-solid fa-check-double"></i> CONFERI — USAR ESTES PREÇOS</button>`;
+      <div class="compare-review-list">${s.draftOffers.map((o,i)=>{
+        const request=this.state.requested.find(r=>r.id===o.requestedId);
+        const check=this.rowCheck(o);
+        const status=check.usable?'ready':(o.ignored?'ignored':'pending');
+        const typeLabel=o.priceType==='unit'?'POR UNIDADE':o.priceType==='total'?'TOTAL DA LINHA':o.priceType==='unavailable'?'NÃO TEM':'ESCOLHER';
+        return `<div class="compare-review-row ${status}">
+          <div class="compare-review-head"><div><b>${this.esc(o.description||`Linha ${i+1}`)}</b><span class="compare-row-status ${status}">${check.usable?'PRONTO':o.ignored?'NÃO USAR':'REVISAR'}</span></div><button class="btn bad small compare-icon-btn" onclick="Comparator.removeDraft('${s.id}','${o.id}')" title="Excluir linha"><i class="fa-solid fa-trash"></i></button></div>
+          <div class="compare-essential-grid">
+            <div class="wide"><label>Qual peça da sua lista?</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','requestedId',this.value==='__ignore'?'':this.value);Comparator.updateDraft('${s.id}','${o.id}','ignored',this.value==='__ignore')">${this.requestedOptions(o.ignored?'__ignore':o.requestedId)}</select></div>
+            <div><label>Marca</label><input value="${this.attr(o.brand)}" placeholder="Ex.: LUK" oninput="Comparator.updateDraft('${s.id}','${o.id}','brand',this.value)"></div>
+            <div><label>Preço informado</label><input inputmode="decimal" value="${this.attr(o.value||'')}" placeholder="0,00" oninput="Comparator.updateDraft('${s.id}','${o.id}','value',this.value)"></div>
+            <div><label>Esse preço é</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','priceType',this.value)">
+              <option value="unknown" ${o.priceType==='unknown'?'selected':''}>ESCOLHER</option>
+              <option value="unit" ${o.priceType==='unit'?'selected':''}>POR UNIDADE</option>
+              <option value="total" ${o.priceType==='total'?'selected':''}>TOTAL DA LINHA</option>
+              <option value="unavailable" ${o.priceType==='unavailable'?'selected':''}>NÃO TEM</option>
+            </select></div>
+          </div>
+          <div class="compare-calc-note">${request?`Será comparado para <b>${this.esc(request.qty)} unidade(s)</b> pedida(s).`: 'Escolha a peça correspondente para liberar este preço.'} ${o.availability==='partial'?`Fornecedor informou disponibilidade parcial de <b>${this.esc(o.qty)}</b>.`:''}</div>
+          <details class="compare-row-more"><summary>Mais detalhes</summary><div class="compare-advanced-grid">
+            <div><label>Descrição original</label><input value="${this.attr(o.description)}" oninput="Comparator.updateDraft('${s.id}','${o.id}','description',this.value)"></div>
+            <div><label>Disponibilidade</label><select onchange="Comparator.updateDraft('${s.id}','${o.id}','availability',this.value)"><option value="available" ${o.availability==='available'?'selected':''}>TEM / COTOU</option><option value="partial" ${o.availability==='partial'?'selected':''}>SÓ TEM PARTE</option><option value="unavailable" ${o.availability==='unavailable'?'selected':''}>NÃO TEM</option></select></div>
+            <div><label>Qtd. informada</label><input inputmode="decimal" value="${this.attr(o.qty||'')}" placeholder="Opcional" oninput="Comparator.updateDraft('${s.id}','${o.id}','qty',this.value)"></div>
+            <div><label>Frete/ST desta linha</label><input inputmode="decimal" value="${this.attr(o.extra||'')}" placeholder="0,00" oninput="Comparator.updateDraft('${s.id}','${o.id}','extra',this.value)"></div>
+            <div><label>Código</label><input value="${this.attr(o.code)}" placeholder="Opcional" oninput="Comparator.updateDraft('${s.id}','${o.id}','code',this.value)"></div>
+            <div><label>Observação</label><input value="${this.attr(o.note)}" placeholder="Opcional" oninput="Comparator.updateDraft('${s.id}','${o.id}','note',this.value)"></div>
+          </div>${o.rawLine?`<div class="compare-source-line"><b>Resposta original:</b> ${this.esc(o.rawLine)}</div>`:''}</details>
+        </div>`;
+      }).join('')}</div>
+      <div class="compare-simple-actions compare-draft-actions"><button class="btn line" onclick="Comparator.addDraft('${s.id}')"><i class="fa-solid fa-plus"></i> Adicionar preço manual</button></div>
+      <details class="compare-total-more"><summary>Frete e conferência do total</summary><div class="compare-total-grid"><div><label>Total mostrado na foto (opcional)</label><input inputmode="decimal" value="${this.attr(s.documentTotal||'')}" placeholder="0,00" oninput="Comparator.updateSupplier('${s.id}','documentTotal',this.value);Comparator.renderDraftStatus('${s.id}')"></div><div><label>Frete fixo do fornecedor (opcional)</label><input inputmode="decimal" value="${this.attr(s.freight||'')}" placeholder="0,00" oninput="Comparator.updateSupplier('${s.id}','freight',this.value)"></div></div></details>
+      <div id="supplierCheck_${s.id}" class="compare-check"></div>
+      <button id="confirmSupplier_${s.id}" class="btn ok block compare-confirm" onclick="Comparator.confirmSupplier('${s.id}')"><i class="fa-solid fa-check"></i> SALVAR PREÇOS CONFERIDOS</button>`;
     },
     renderSuppliers(){
       const box=this.$('compareSuppliers');if(!box)return;
       if(!this.state.suppliers.length){
-        box.innerHTML='<div class="compare-empty">Toque em <b>Adicionar fornecedor</b>. Para cada um, cole a mensagem ou envie a foto.</div>';
+        box.innerHTML='<div class="compare-empty">Adicione um fornecedor. Ele pode responder uma única peça ou apenas os itens que possui.</div>';
         return;
       }
       box.innerHTML=this.state.suppliers.map((s,index)=>{
         const confirmed=s.confirmed;
+        const confirmedRows=(s.offers||[]).map(o=>{
+          const req=this.state.requested.find(r=>r.id===o.requestedId);
+          const label=o.priceType==='unit'?`${this.money(o.value)} cada`:o.priceType==='total'?`${this.money(o.value)} total`:'NÃO TEM';
+          return `<div class="compare-confirmed-line"><div><b>${this.esc(req?.description||o.description)}</b><span>${this.esc(o.brand||'SEM MARCA INFORMADA')}</span></div><strong>${label}</strong></div>`;
+        }).join('');
         return `<div class="compare-supplier-card ${confirmed?'confirmed':''}">
           <div class="compare-supplier-head">
-            <div class="compare-supplier-name"><span>${index+1}</span><input value="${this.attr(s.name)}" oninput="Comparator.updateSupplier('${s.id}','name',this.value)"></div>
-            <div class="compare-supplier-status ${confirmed?'ok':'wait'}"><i class="fa-solid ${confirmed?'fa-circle-check':'fa-triangle-exclamation'}"></i>${confirmed?'CONFIRMADO':'NÃO CONFERIDO'}</div>
+            <div class="compare-supplier-name"><span>${index+1}</span><input aria-label="Nome do fornecedor" value="${this.attr(s.name)}" oninput="Comparator.updateSupplier('${s.id}','name',this.value)"></div>
+            <div class="compare-supplier-status ${confirmed?'ok':'wait'}"><i class="fa-solid ${confirmed?'fa-circle-check':'fa-clock'}"></i>${confirmed?'SALVO':'AGUARDANDO'}</div>
           </div>
-          ${confirmed?`<div class="compare-success"><b>${s.offers.length} preço(s) confirmado(s).</b> Somente estes dados entram na comparação.</div>
-          <div class="compare-simple-actions"><button class="btn line" onclick="Comparator.editSupplier('${s.id}')"><i class="fa-solid fa-pen"></i> Editar conferência</button><button class="btn bad" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-trash"></i> Excluir</button></div>`:
+          ${confirmed?`<div class="compare-success"><b>${s.offers.length} preço(s) deste fornecedor foram salvos.</b> Os itens que ele não respondeu não impedem a comparação.</div><div class="compare-confirmed-list">${confirmedRows}</div>
+          <div class="compare-simple-actions"><button class="btn line" onclick="Comparator.editSupplier('${s.id}')"><i class="fa-solid fa-pen"></i> Editar</button><button class="btn bad" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-trash"></i> Excluir</button></div>`:
           `<div class="compare-source-controls">
-            <label>Resposta recebida</label>
-            <textarea id="supplierText_${s.id}" class="compare-source" placeholder="Cole aqui a mensagem do fornecedor..." oninput="Comparator.updateSupplier('${s.id}','responseText',this.value)">${this.esc(s.responseText||'')}</textarea>
-            <div class="compare-simple-actions">
-              <button class="btn main" onclick="Comparator.processSupplierText('${s.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i> Ler mensagem</button>
+            <label>Resposta do fornecedor</label>
+            <textarea id="supplierText_${s.id}" class="compare-source" placeholder="Cole exatamente a mensagem recebida. Pode conter somente uma peça." oninput="Comparator.updateSupplier('${s.id}','responseText',this.value)">${this.esc(s.responseText||'')}</textarea>
+            <div class="compare-simple-actions compare-read-actions">
+              <button class="btn main" onclick="Comparator.processSupplierText('${s.id}')"><i class="fa-solid fa-wand-magic-sparkles"></i> Interpretar mensagem</button>
               <label class="btn line" for="supplierImage_${s.id}"><i class="fa-solid fa-camera"></i> Ler foto</label>
               <input id="supplierImage_${s.id}" class="compare-file" type="file" accept="image/*" onchange="Comparator.processSupplierImage('${s.id}',this)">
-              <button class="btn bad" onclick="Comparator.removeSupplier('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn bad compare-icon-btn" onclick="Comparator.removeSupplier('${s.id}')" title="Excluir fornecedor"><i class="fa-solid fa-trash"></i></button>
             </div>
             <img id="supplierPreview_${s.id}" src="${this.attr(this.imagePreviews[s.id]||'')}" class="compare-image-preview ${this.imagePreviews[s.id]?'show':''}" alt="Prévia da cotação">
             <div id="supplierBusy_${s.id}" class="compare-progress"><span class="compare-spinner"></span><span id="supplierBusyText_${s.id}">Processando...</span></div>
           </div>
           ${this.renderDraftRows(s)}`}
-          <div class="compare-freight"><label>Frete fixo deste fornecedor (opcional)</label><input inputmode="decimal" value="${this.attr(s.freight||'')}" placeholder="0,00" oninput="Comparator.updateSupplier('${s.id}','freight',this.value)"></div>
         </div>`;
       }).join('');
       this.state.suppliers.forEach(s=>{if(!s.confirmed&&s.draftOffers.length)this.renderDraftStatus(s.id);});
@@ -664,13 +716,15 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       return (s.offers||[]).filter(o=>o.requestedId===request.id).map(o=>this.offerResult(s,request,o));
     },
     offerResult(s,r,o){
-      const reqQty=this.num(r.qty)||1,offQty=this.num(o.qty)||0;
+      const reqQty=this.num(r.qty)||1;
+      const quotedQty=this.num(o.qty)||reqQty;
       const unavailable=o.availability==='unavailable'||o.priceType==='unavailable';
-      const enough=!unavailable&&offQty>=reqQty;
-      const baseUnit=o.priceType==='unit'?this.num(o.value):(offQty>0?this.num(o.value)/offQty:0);
-      const extraUnit=offQty>0?this.num(o.extra)/offQty:0;
+      const partial=!unavailable&&o.availability==='partial';
+      const denominator=Math.max(.0001,quotedQty);
+      const baseUnit=o.priceType==='unit'?this.num(o.value):(this.num(o.value)/denominator);
+      const extraUnit=this.num(o.extra)/Math.max(.0001,reqQty);
       const unitCost=baseUnit+extraUnit;
-      return {supplierId:s.id,supplierName:s.name,freight:this.num(s.freight),requestId:r.id,description:r.description,brand:o.brand,code:o.code,requiredQty:reqQty,offeredQty:offQty,unitCost,total:unitCost*reqQty,enough,unavailable,note:o.note,source:o};
+      return {supplierId:s.id,supplierName:s.name,freight:this.num(s.freight),requestId:r.id,description:r.description,brand:o.brand,code:o.code,requiredQty:reqQty,offeredQty:partial?quotedQty:reqQty,unitCost,total:unitCost*reqQty,enough:!unavailable&&!partial,unavailable,partial,note:o.note,source:o};
     },
     computeResult(){
       const confirmed=this.state.suppliers.filter(s=>s.confirmed);
@@ -699,46 +753,47 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     },
     renderResults(){
       const box=this.$('compareResults');if(!box)return;
-      if(!this.state.requested.length){box.innerHTML='<div class="compare-empty">A comparação aparecerá depois que a lista for carregada.</div>';return;}
+      if(!this.state.requested.length){box.innerHTML='<div class="compare-empty">Carregue sua lista de peças para começar.</div>';return;}
       const result=this.computeResult();
-      if(!result.confirmed.length){box.innerHTML='<div class="compare-empty">Nenhum fornecedor foi confirmado. Leia a resposta, confira e toque em <b>CONFERI — USAR ESTES PREÇOS</b>.</div>';return;}
+      if(!result.confirmed.length){box.innerHTML='<div class="compare-empty">Ainda não há preços salvos. Um fornecedor pode responder somente uma peça: confira essa linha e salve normalmente.</div>';return;}
       const summary=`<div class="compare-kpis">
-        <div class="compare-kpi"><span>Itens solicitados</span><b>${this.state.requested.length}</b></div>
-        <div class="compare-kpi"><span>Fornecedores confirmados</span><b>${result.confirmed.length}</b></div>
-        <div class="compare-kpi ${result.missing?'warn':'good'}"><span>Itens sem preço completo</span><b>${result.missing}</b></div>
-        <div class="compare-kpi good"><span>Menores por item + fretes</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b></div>
+        <div class="compare-kpi"><span>Peças da sua lista</span><b>${this.state.requested.length}</b></div>
+        <div class="compare-kpi"><span>Fornecedores usados</span><b>${result.confirmed.length}</b></div>
+        <div class="compare-kpi ${result.missing?'warn':'good'}"><span>Ainda sem preço</span><b>${result.missing}</b></div>
+        <div class="compare-kpi good"><span>Menores já encontrados</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b></div>
       </div>`;
       const plans=`<div class="compare-plan-simple">
-        <div><span>Compra pelos menores preços confirmados</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b><small>${result.usedIds.length} fornecedor(es), fretes fixos incluídos</small></div>
-        <div><span>Fornecedor único mais barato</span><b>${result.singleBest?this.money(result.singleBest.total):'Não há fornecedor completo'}</b><small>${result.singleBest?this.esc(result.singleBest.supplier.name):'Faltam itens em todos os fornecedores'}</small></div>
+        <div><span>Somando os menores preços disponíveis</span><b>${result.winners.length?this.money(result.mixedTotal):'—'}</b><small>${result.winners.length} de ${this.state.requested.length} item(ns) com preço; fretes fixos incluídos uma vez.</small></div>
+        <div><span>Fornecedor único com a lista completa</span><b>${result.singleBest?this.money(result.singleBest.total):'Ainda não existe'}</b><small>${result.singleBest?this.esc(result.singleBest.supplier.name):'É normal quando cada fornecedor responde apenas o que possui.'}</small></div>
       </div>`;
       const cards=result.items.map((item,index)=>{
         const complete=item.complete.map((o,i)=>`<div class="compare-price-row ${i===0?'winner':''}">
           <div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'SEM MARCA INFORMADA')}${o.code?' · '+this.esc(o.code):''}</span></div>
           <div><span>${this.money(o.unitCost)} cada</span><b>${this.money(o.total)}</b></div>
-          ${i===0?'<em>MENOR CONFIRMADO</em>':''}
+          ${i===0?'<em>MENOR PREÇO CONFERIDO</em>':''}
         </div>`).join('');
-        const partial=item.partial.map(o=>`<div class="compare-price-row partial"><div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'SEM MARCA')} · só ${o.offeredQty} un.</span></div><div><span>${this.money(o.unitCost)} cada</span><b>PARCIAL</b></div></div>`).join('');
+        const partial=item.partial.map(o=>`<div class="compare-price-row partial"><div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'SEM MARCA')} · informou somente ${this.esc(o.offeredQty)} un.</span></div><div><span>${this.money(o.unitCost)} cada</span><b>PARCIAL</b></div></div>`).join('');
         const unavailable=item.unavailable.map(o=>`<div class="compare-price-row unavailable"><div><b>${this.esc(o.supplierName)}</b><span>${this.esc(o.brand||'')}</span></div><div><b>NÃO TEM</b></div></div>`).join('');
         return `<div class="compare-result-card">
-          <div class="compare-result-title"><span>${index+1}</span><div><b>${this.esc(item.request.description)}</b><small>Quantidade necessária: ${this.esc(item.request.qty)}</small></div></div>
-          ${complete||partial||unavailable||'<div class="compare-no-price">Nenhuma cotação confirmada para este item.</div>'}
+          <div class="compare-result-title"><span>${index+1}</span><div><b>${this.esc(item.request.description)}</b><small>Você precisa de ${this.esc(item.request.qty)} unidade(s)</small></div></div>
+          ${complete||partial||unavailable||'<div class="compare-no-price">Nenhum fornecedor respondeu esta peça ainda.</div>'}
         </div>`;
       }).join('');
-      box.innerHTML=summary+plans+cards+`<details class="compare-more"><summary>Ferramentas adicionais</summary><div class="compare-simple-actions"><button class="btn ok" onclick="Comparator.addWinnersToBudget()" ${result.missing?'disabled':''}><i class="fa-solid fa-cart-plus"></i> Levar menores ao orçamento</button><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"><button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar</button></div></details>`;
+      box.innerHTML=summary+plans+cards+`<details class="compare-more"><summary>Outras ações</summary><div class="compare-simple-actions"><button class="btn ok" onclick="Comparator.addWinnersToBudget()" ${!result.winners.length?'disabled':''}><i class="fa-solid fa-cart-plus"></i> Levar menores encontrados ao orçamento</button><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"><button class="btn bad" onclick="Comparator.clearAll()"><i class="fa-solid fa-trash"></i> Limpar comparação</button></div></details>`;
     },
     addWinnersToBudget(){
       const app=this.app(),result=this.computeResult();
       if(!app||typeof app.addPart!=='function'){this.toast('O orçamento principal não está disponível.');return;}
-      if(result.missing){this.toast('Ainda existem itens sem preço completo.');return;}
+      if(!result.winners.length){this.toast('Ainda não existe nenhum menor preço para levar ao orçamento.');return;}
       const raw=prompt('Percentual de acréscimo sobre o custo. Digite 0 para não acrescentar:','0');
       if(raw===null)return;
       const markup=Math.max(0,this.num(raw));
-      if(!this.confirm(`Adicionar ${result.winners.length} peça(s) ao orçamento com ${markup}% de acréscimo?`))return;
+      const missingText=result.missing?` Existem ${result.missing} item(ns) ainda sem preço e eles não serão adicionados.`:'';
+      if(!this.confirm(`Adicionar ${result.winners.length} peça(s) com menor preço ao orçamento, usando ${markup}% de acréscimo?${missingText}`))return;
       result.winners.forEach(w=>app.addPart({descricao:w.description,qtd:w.requiredQty,valorUnit:w.unitCost*(1+markup/100),fornecedor:[w.brand,w.supplierName].filter(Boolean).join(' | '),cod:w.code||'',desc:0}));
       if(typeof app.saveLocal==='function')app.saveLocal(false);
       if(typeof app.show==='function')app.show('secItens');
-      this.toast('Menores preços adicionados ao orçamento.');
+      this.toast(`${result.winners.length} peça(s) adicionada(s) ao orçamento.`);
     },
     exportJSON(){
       const blob=new Blob([JSON.stringify(this.state,null,2)],{type:'application/json'}),a=document.createElement('a');
@@ -752,7 +807,9 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
     },
     clearAll(){
       if(!this.confirm('Apagar somente a comparação de preços? O orçamento principal será preservado.'))return;
-      this.state=this.defaultState();localStorage.removeItem(this.STORAGE_KEY);
+      this.state=this.defaultState();
+      localStorage.removeItem(this.STORAGE_KEY);
+      this.LEGACY_KEYS.forEach(key=>localStorage.removeItem(key));
       this.$('compareVehicle').value='';this.$('compareRequestText').value='';this.renderAll();this.toast('Comparação limpa.');
     }
   };

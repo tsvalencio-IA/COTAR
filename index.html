@@ -7,7 +7,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="css/comparador.css?v=2.0.0">
+  <link rel="stylesheet" href="css/comparador.css?v=3.0.0">
 
   <script src="config.js"></script>
   <script src="js/api.js"></script>
@@ -214,40 +214,33 @@
     <section id="secComparador" class="section">
       <h2 class="section-title">Comparador de preços</h2>
       <div id="compareInlineMessage" class="compare-inline-message"></div>
-      <div class="compare-intro"><b>Regra de segurança:</b> a IA apenas lê e sugere. Nenhum preço de foto ou mensagem entra na comparação antes de você conferir e confirmar.</div>
+      <div class="compare-intro"><b>Como funciona:</b> cada fornecedor pode responder apenas as peças que tem. Você confere os preços encontrados e salva somente essas linhas. Os itens não respondidos ficam aguardando os outros fornecedores.</div>
 
-      <div class="card">
-        <h3><span class="compare-step">1</span> Lista que você está cotando</h3>
-        <div class="grid">
-          <div class="col-4"><label>Veículo / aplicação</label><input id="compareVehicle" placeholder="Ex.: Uno 1.0 Way 2010 — quadrado"></div>
-          <div class="col-8"><label>Uma peça por linha</label><textarea id="compareRequestText" style="min-height:150px" placeholder="Ex.:
+      <div class="card compare-main-card">
+        <h3><span class="compare-step">1</span> Sua lista de peças</h3>
+        <div class="compare-request-entry">
+          <div><label>Veículo / aplicação</label><input id="compareVehicle" placeholder="Ex.: Uno 1.0 Way 2010 — quadrado"></div>
+          <div><label>Cole a lista completa, uma peça por linha</label><textarea id="compareRequestText" placeholder="Ex.:
 1 embreagem
 1 cabo de embreagem
 2 amortecedores dianteiros"></textarea></div>
         </div>
-        <div class="compare-simple-actions" style="margin-top:10px">
-          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-list-check"></i> Carregar peças</button>
+        <div class="compare-simple-actions compare-primary-actions">
+          <button class="btn main" onclick="Comparator.parseRequest()"><i class="fa-solid fa-list-check"></i> Carregar minha lista</button>
           <button class="btn line" onclick="Comparator.loadBudgetParts()"><i class="fa-solid fa-file-import"></i> Usar peças do orçamento</button>
-          <button class="btn line" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Adicionar manualmente</button>
         </div>
-        <div style="margin-top:12px" id="compareRequestedList"></div>
+        <details class="compare-request-details"><summary>Ver ou ajustar as peças carregadas</summary><div id="compareRequestedList"></div><button class="btn line block" onclick="Comparator.addRequested()"><i class="fa-solid fa-plus"></i> Adicionar outra peça</button></details>
       </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-          <h3 style="margin-bottom:0"><span class="compare-step">2</span> Respostas dos fornecedores</h3>
-          <button class="btn main" onclick="Comparator.addSupplier()"><i class="fa-solid fa-plus"></i> Adicionar fornecedor</button>
-        </div>
-        <p class="note" style="margin:10px 0 12px">Cole a mensagem ou envie a foto. Depois revise as linhas e toque em <b>CONFERI — USAR ESTES PREÇOS</b>.</p>
+      <div class="card compare-main-card">
+        <div class="compare-section-head"><h3><span class="compare-step">2</span> Respostas dos fornecedores</h3><button class="btn main" onclick="Comparator.addSupplier()"><i class="fa-solid fa-plus"></i> Adicionar fornecedor</button></div>
+        <p class="note compare-help-text">Cole a resposta exatamente como recebeu ou envie a foto. Mesmo que exista somente uma peça na resposta, ela poderá ser salva.</p>
         <div id="compareSuppliers"></div>
       </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
-          <h3 style="margin-bottom:0"><span class="compare-step">3</span> Menores preços confirmados</h3>
-          <span id="compareSaveStatus" class="note">Salvo neste navegador</span>
-        </div>
-        <div id="compareResults" style="margin-top:12px"></div>
+      <div class="card compare-main-card">
+        <div class="compare-section-head"><h3><span class="compare-step">3</span> Comparação atual</h3><span id="compareSaveStatus" class="note">Salvo neste navegador</span></div>
+        <div id="compareResults"></div>
       </div>
     </section>
 
@@ -348,6 +341,6 @@
     };
     window.addEventListener('DOMContentLoaded',()=>App.init());
   </script>
-  <script src="js/comparador.js?v=2.0.0"></script>
+  <script src="js/comparador.js?v=3.0.0"></script>
 </body>
 </html>
