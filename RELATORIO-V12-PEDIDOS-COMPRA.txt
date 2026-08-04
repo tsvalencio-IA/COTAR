@@ -1,0 +1,21 @@
+SOS ORÇAMENTOS IA — V12 — PEDIDOS DE COMPRA POR FORNECEDOR
+
+IMPLEMENTADO
+- Seleção manual em cada preço da tabela comparativa.
+- O item destacado como menor preço não é selecionado automaticamente.
+- Pode ser escolhido preço de qualquer fornecedor, mesmo não sendo o menor.
+- Uma alternativa por peça para cada fornecedor; ao escolher outra marca do mesmo fornecedor, ela substitui a anterior.
+- Pedidos independentes para os 3 fornecedores.
+- Botões para marcar os itens destacados de um fornecedor ou limpar a seleção.
+- Resumo visual de itens e total por fornecedor.
+- Frete fixo cadastrado aparece separado e é incluído uma única vez no pedido daquele fornecedor.
+- Geração e compartilhamento de PDF individual para cada fornecedor.
+- PDF contém fornecedor, solicitante, veículo, código, descrição, marca, quantidade, valor unitário, frete/ST da linha e total.
+- Seleções salvas no navegador e incluídas no backup JSON.
+- Responsividade para computador, tablet e celular.
+
+ARQUIVOS FUNCIONALMENTE ALTERADOS
+- index.html
+- js/comparador.js
+- css/comparador.css
+- sw.js (somente atualização do cache PWA)

@@ -1,14 +1,14 @@
 'use strict';
 
-const CACHE_VERSION = 'sos-orcamentos-pwa-v11.0.0';
+const CACHE_VERSION = 'sos-orcamentos-pwa-v12.0.0';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest?v=11.0.0',
+  './manifest.webmanifest?v=12.0.0',
   './config.js',
   './js/api.js',
-  './js/comparador.js?v=11.0.0',
-  './css/comparador.css?v=11.0.0',
+  './js/comparador.js?v=12.0.0',
+  './css/comparador.css?v=12.0.0',
   './js/pwa.js?v=8.0.0',
   './icons/icon-192.png',
   './icons/icon-512.png',
