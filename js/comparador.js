@@ -1,19 +1,20 @@
 /*
-  Comparador de preços V9 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
+  Comparador de preços V12 — separação automática de listas por linha, ponto e vírgula ou hífen, matriz visual com 3 fornecedores, PDF e reinício seguro.
   Regra central: nenhum dado lido por IA entra na comparação antes da confirmação humana.
 */
 (function(){
   'use strict';
 
   const Comparator = {
-    STORAGE_KEY: 'sos_comparador_precos_v7',
-    LEGACY_KEYS: ['sos_comparador_precos_v6','sos_comparador_precos_v5','sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
+    STORAGE_KEY: 'sos_comparador_precos_v8',
+    LEGACY_KEYS: ['sos_comparador_precos_v7','sos_comparador_precos_v6','sos_comparador_precos_v5','sos_comparador_precos_v4','sos_comparador_precos_v3','sos_comparador_precos_v2','sos_comparador_precos_v1'],
     state: {
-      version: 7,
+      version: 8,
       vehicle: '',
       requestText: '',
       requested: [],
-      suppliers: []
+      suppliers: [],
+      purchaseSelections: {}
     },
     busySuppliers: new Set(),
     imagePreviews: {},
@@ -65,7 +66,7 @@
     },
     confirm(message){ return window.confirm(message); },
 
-    defaultState(){ return {version:7,vehicle:'',requestText:'',requested:[],suppliers:[]}; },
+    defaultState(){ return {version:8,vehicle:'',requestText:'',requested:[],suppliers:[],purchaseSelections:{}}; },
     save(){
       try { localStorage.setItem(this.STORAGE_KEY,JSON.stringify(this.state)); }
       catch(e){ console.warn('Falha ao salvar comparação',e); }
@@ -84,9 +85,10 @@
         if(!raw) return;
         const parsed=JSON.parse(raw);
         this._loadedVersion=this.num(parsed?.version)||0;
-        this.state=Object.assign(this.defaultState(),parsed||{}, {version:7});
+        this.state=Object.assign(this.defaultState(),parsed||{}, {version:8});
         if(!Array.isArray(this.state.requested)) this.state.requested=[];
         if(!Array.isArray(this.state.suppliers)) this.state.suppliers=[];
+        if(!this.state.purchaseSelections || typeof this.state.purchaseSelections!=='object' || Array.isArray(this.state.purchaseSelections)) this.state.purchaseSelections={};
         this.state.suppliers.forEach(s=>{
           s.draftOffers=Array.isArray(s.draftOffers)?s.draftOffers:[];
           s.offers=Array.isArray(s.offers)?s.offers:[];
@@ -347,6 +349,7 @@
       const requested=parsed.requested;
       if(!requested.length){ this.toast('Nenhuma peça foi identificada na lista.'); return; }
       this.state.requested=requested;
+      this.state.purchaseSelections={};
       if(parsed.vehicle && !String(this.state.vehicle||'').trim())this.state.vehicle=parsed.vehicle;
       this.$('compareVehicle').value=this.state.vehicle||'';
       this.state.suppliers.forEach(s=>this.rebuildSupplierDraft(s));
@@ -359,6 +362,7 @@
       const parts=app?.state?.parts;
       if(!Array.isArray(parts)||!parts.length){ this.toast('O orçamento atual não possui peças.'); return; }
       if(this.state.requested.length && !this.confirm('Substituir a lista atual pelas peças do orçamento?')) return;
+      this.state.purchaseSelections={};
       this.state.requested=parts.map((p,i)=>({id:this.id('req'),order:i,description:p.descricao||p.description||'PEÇA',qty:this.num(p.qtd)||1,unit:'PC'}));
       this.state.requestText=this.state.requested.map(r=>`${r.qty} ${r.description}`).join('\n');
       this.$('compareRequestText').value=this.state.requestText;
@@ -369,18 +373,21 @@
       this.toast('Peças do orçamento carregadas.');
     },
     addRequested(){
+      this.state.purchaseSelections={};
       this.state.requested.push({id:this.id('req'),order:this.state.requested.length,description:'',qty:1,unit:'PC'});
       this.renderAll();
     },
     updateRequested(id,field,value){
       const r=this.state.requested.find(x=>x.id===id); if(!r)return;
       r[field]=field==='qty'?Math.max(0.01,this.num(value)):value;
+      this.state.purchaseSelections={};
       this.state.suppliers.forEach(s=>{s.confirmed=false;s.offers=[];});
       this.renderResults();this.save();
     },
     removeRequested(id){
       const index=this.state.requested.findIndex(x=>x.id===id);if(index<0)return;
       this.state.requested.splice(index,1);
+      this.removeRequestFromPurchaseSelections(id);
       this.state.requested.forEach((r,i)=>r.order=i);
       this.state.suppliers.forEach(s=>{
         s.draftOffers=(s.draftOffers||[]).map(o=>o.requestedId===id?{...o,requestedId:''}:o);
@@ -415,6 +422,7 @@
       const index=this.state.suppliers.findIndex(x=>x.id===id);
       const replacement=this.newSupplier(index+1);
       replacement.name=s.name||`FORNECEDOR ${index+1}`;
+      this.clearPurchaseSelectionsForSupplier(id);
       this.state.suppliers.splice(index,1,replacement);
       delete this.imagePreviews[id];
       this.renderAll();
@@ -423,7 +431,7 @@
     updateSupplier(id,field,value){
       const s=this.supplier(id);if(!s)return;
       s[field]=['freight','documentTotal','documentExtra'].includes(field)?this.num(value):value;
-      if(field==='responseText'&&s.confirmed){s.confirmed=false;s.offers=[];}
+      if(field==='responseText'&&s.confirmed){s.confirmed=false;s.offers=[];this.clearPurchaseSelectionsForSupplier(id);}
       if(field==='freight') this.renderResults();
       this.save();
     },
@@ -863,6 +871,7 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         return;
       }
       s.offers=validation.valid.map(o=>this.normalizeDraft({...o,id:o.id}));
+      this.cleanupPurchaseSelections(id);
       s.confirmed=true;s.confirmedAt=new Date().toISOString();
       this.renderAll();
       const ignored=validation.pending.length;
@@ -971,6 +980,122 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       this.state.suppliers.forEach(s=>{if(!s.confirmed&&s.draftOffers.length)this.renderDraftStatus(s.id);});
     },
 
+    purchaseMap(){
+      if(!this.state.purchaseSelections || typeof this.state.purchaseSelections!=='object' || Array.isArray(this.state.purchaseSelections)) this.state.purchaseSelections={};
+      return this.state.purchaseSelections;
+    },
+    selectedOfferId(supplierId,requestId){
+      return String(this.purchaseMap()?.[supplierId]?.[requestId]||'');
+    },
+    isPurchaseOfferSelected(offer){
+      return !!offer && this.selectedOfferId(offer.supplierId,offer.requestId)===String(offer.source?.id||'');
+    },
+    clearPurchaseSelectionsForSupplier(supplierId){
+      const map=this.purchaseMap();
+      if(map[supplierId]) delete map[supplierId];
+    },
+    removeRequestFromPurchaseSelections(requestId){
+      const map=this.purchaseMap();
+      Object.keys(map).forEach(supplierId=>{
+        if(map[supplierId] && map[supplierId][requestId]) delete map[supplierId][requestId];
+        if(map[supplierId] && !Object.keys(map[supplierId]).length) delete map[supplierId];
+      });
+    },
+    cleanupPurchaseSelections(onlySupplierId=''){
+      const map=this.purchaseMap();
+      const supplierIds=onlySupplierId?[onlySupplierId]:Object.keys(map);
+      supplierIds.forEach(supplierId=>{
+        const supplier=this.supplier(supplierId);
+        if(!supplier || !supplier.confirmed){delete map[supplierId];return;}
+        const requestMap=map[supplierId];
+        if(!requestMap || typeof requestMap!=='object'){delete map[supplierId];return;}
+        Object.keys(requestMap).forEach(requestId=>{
+          const request=this.state.requested.find(r=>r.id===requestId);
+          const offerId=String(requestMap[requestId]||'');
+          const offer=(supplier.offers||[]).find(o=>String(o.id)===offerId && o.requestedId===requestId);
+          if(!request || !offer || offer.availability==='unavailable' || offer.priceType==='unavailable' || this.num(offer.value)<=0) delete requestMap[requestId];
+        });
+        if(!Object.keys(requestMap).length) delete map[supplierId];
+      });
+      return map;
+    },
+    purchaseSelectionCount(){
+      this.cleanupPurchaseSelections();
+      return Object.values(this.purchaseMap()).reduce((sum,requests)=>sum+Object.keys(requests||{}).length,0);
+    },
+    togglePurchaseSelection(supplierId,requestId,offerId,checked){
+      const supplier=this.supplier(supplierId);
+      const request=this.state.requested.find(r=>r.id===requestId);
+      const offer=(supplier?.offers||[]).find(o=>String(o.id)===String(offerId) && o.requestedId===requestId);
+      if(checked && (!supplier?.confirmed || !request || !offer || offer.availability==='unavailable' || offer.priceType==='unavailable' || this.num(offer.value)<=0)){
+        this.toast('Este preço não pode ser incluído no pedido de compra.');
+        return;
+      }
+      const map=this.purchaseMap();
+      if(checked){
+        if(!map[supplierId]) map[supplierId]={};
+        map[supplierId][requestId]=String(offerId);
+      }else if(map[supplierId] && String(map[supplierId][requestId]||'')===String(offerId)){
+        delete map[supplierId][requestId];
+        if(!Object.keys(map[supplierId]).length) delete map[supplierId];
+      }
+      this.save();
+      this.syncPurchaseSelectionUI(supplierId,requestId);
+      this.renderPurchaseOrders();
+    },
+    syncPurchaseSelectionUI(supplierId='',requestId=''){
+      document.querySelectorAll('.compare-order-toggle[data-supplier-id][data-request-id][data-offer-id]').forEach(label=>{
+        if(supplierId && label.dataset.supplierId!==String(supplierId))return;
+        if(requestId && label.dataset.requestId!==String(requestId))return;
+        const selected=this.selectedOfferId(label.dataset.supplierId,label.dataset.requestId)===String(label.dataset.offerId||'');
+        label.classList.toggle('selected',selected);
+        const input=label.querySelector('input');if(input)input.checked=selected;
+        const text=label.querySelector('.compare-order-toggle-text');if(text)text.innerHTML=selected?'<i class="fa-solid fa-check"></i> INCLUÍDO NO PEDIDO':'<i class="fa-solid fa-cart-plus"></i> INCLUIR NO PEDIDO';
+      });
+      const counter=this.$('comparePurchaseCounter');
+      if(counter)counter.textContent=this.purchaseSelectionCount();
+    },
+    selectWinningOffersForSupplier(supplierId){
+      const result=this.computeResult();
+      const supplier=this.supplier(supplierId);if(!supplier?.confirmed)return;
+      const map=this.purchaseMap();
+      if(!map[supplierId])map[supplierId]={};
+      let count=0;
+      result.items.forEach(item=>{
+        const winner=item.winner;
+        if(winner?.supplierId!==supplierId || !winner.source?.id)return;
+        map[supplierId][item.request.id]=String(winner.source.id);count++;
+      });
+      if(!count){this.toast(`${supplier.name}: nenhum item destacado pertence a este fornecedor.`);return;}
+      this.save();this.syncPurchaseSelectionUI(supplierId);this.renderPurchaseOrders(result);
+      this.toast(`${supplier.name}: ${count} item(ns) destacado(s) marcado(s). Você ainda pode retirar ou escolher outros.`);
+    },
+    clearSupplierPurchaseOrder(supplierId){
+      this.clearPurchaseSelectionsForSupplier(supplierId);this.save();this.syncPurchaseSelectionUI(supplierId);this.renderPurchaseOrders();
+    },
+    purchaseOrderData(supplierId){
+      this.cleanupPurchaseSelections(supplierId);
+      const supplier=this.supplier(supplierId);
+      const selected=this.purchaseMap()?.[supplierId]||{};
+      const lines=[];
+      if(supplier?.confirmed){
+        this.state.requested.forEach(request=>{
+          const offerId=String(selected[request.id]||'');if(!offerId)return;
+          const source=(supplier.offers||[]).find(o=>String(o.id)===offerId && o.requestedId===request.id);if(!source)return;
+          const offer=this.offerResult(supplier,request,source);
+          if(offer.unavailable || offer.total<=0)return;
+          lines.push(offer);
+        });
+      }
+      const itemsTotal=lines.reduce((sum,line)=>sum+line.total,0);
+      const freight=lines.length?this.num(supplier?.freight):0;
+      return {supplier,lines,itemsTotal,freight,total:itemsTotal+freight};
+    },
+    scrollToPurchaseOrders(){
+      const target=this.$('comparePurchaseOrders');
+      if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+    },
+
     offerForRequest(s,request){
       return (s.offers||[]).filter(o=>o.requestedId===request.id).map(o=>this.offerResult(s,request,o));
     },
@@ -1030,6 +1155,8 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         return `<div class="${classes.join(' ')}"><div class="compare-option-top"><b>${this.esc(offer.brand||'SEM MARCA')}</b><span>NÃO TEM</span></div>${offer.note?`<small>${this.esc(offer.note)}</small>`:''}</div>`;
       }
       const stock=offer.partial?`SÓ TEM ${this.esc(offer.offeredQty)} DE ${this.esc(offer.requiredQty)}`:'';
+      const selected=this.isPurchaseOfferSelected(offer);
+      const supplierId=this.attr(offer.supplierId),requestId=this.attr(offer.requestId),offerId=this.attr(offer.source?.id||'');
       return `<div class="${classes.join(' ')}">
         <div class="compare-option-top"><b>${this.esc(offer.brand||'SEM MARCA INFORMADA')}</b>${isWinner?'<span class="compare-best-badge"><i class="fa-solid fa-trophy"></i> MAIS BARATO</span>':''}</div>
         ${offer.code?`<small>Cód. ${this.esc(offer.code)}</small>`:''}
@@ -1037,6 +1164,10 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         ${offer.extraTotal>0?`<div class="compare-extra-line">+ ${this.money(offer.extraTotal)} de frete/ST nesta linha</div>`:''}
         ${stock?`<div class="compare-stock-warning">${stock} · total calculado somente sobre o estoque informado</div>`:''}
         ${offer.note?`<small class="compare-option-note">${this.esc(offer.note)}</small>`:''}
+        <label class="compare-order-toggle ${selected?'selected':''}" data-supplier-id="${supplierId}" data-request-id="${requestId}" data-offer-id="${offerId}">
+          <input type="checkbox" ${selected?'checked':''} onchange="Comparator.togglePurchaseSelection('${supplierId}','${requestId}','${offerId}',this.checked)">
+          <span class="compare-order-toggle-text">${selected?'<i class="fa-solid fa-check"></i> INCLUÍDO NO PEDIDO':'<i class="fa-solid fa-cart-plus"></i> INCLUIR NO PEDIDO'}</span>
+        </label>
       </div>`;
     },
     supplierMatrixCellHTML(item,supplier){
@@ -1057,12 +1188,14 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       const box=this.$('compareResults');if(!box)return;
       if(!this.state.requested.length){box.innerHTML='<div class="compare-empty">Carregue a lista das peças. A tabela com os 3 fornecedores será criada automaticamente.</div>';return;}
       this.ensureThreeSuppliers();
+      this.cleanupPurchaseSelections();
       const result=this.computeResult();
       const supplierSummaries=this.state.suppliers.map(s=>({supplier:s,...this.supplierCoverage(s,result)}));
       const actions=`<div class="compare-result-actions">
         <button class="btn ok" onclick="Comparator.generateComparisonPDF()" ${!result.confirmed.length?'disabled':''}><i class="fa-solid fa-file-pdf"></i> Gerar PDF da comparação</button>
         <button class="btn line" onclick="Comparator.shareComparisonPDF()" ${!result.confirmed.length?'disabled':''}><i class="fa-solid fa-share-nodes"></i> Compartilhar PDF</button>
         <button class="btn main" onclick="Comparator.addWinnersToBudget()" ${!result.winners.length?'disabled':''}><i class="fa-solid fa-cart-plus"></i> Levar menores ao orçamento</button>
+        <button class="btn purchase" onclick="Comparator.scrollToPurchaseOrders()" ${!result.confirmed.length?'disabled':''}><i class="fa-solid fa-clipboard-list"></i> Pedidos de compra <b id="comparePurchaseCounter">${this.purchaseSelectionCount()}</b></button>
       </div>`;
       const summary=`<div class="compare-kpis compare-kpis-visual">
         <div class="compare-kpi"><span>Peças da lista</span><b>${this.state.requested.length}</b></div>
@@ -1087,10 +1220,105 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
         <div class="compare-mobile-suppliers">${this.state.suppliers.map((s,i)=>`<div class="compare-mobile-supplier ${item.winner&&item.winner.supplierId===s.id?'has-best':''}"><div class="compare-mobile-supplier-head"><span>FORNECEDOR ${i+1}</span><b>${this.esc(s.name)}</b></div>${this.supplierMatrixCellHTML(item,s)}</div>`).join('')}</div>
         <footer>${item.winner?`<span><i class="fa-solid fa-trophy"></i> MELHOR: <b>${this.esc(item.winner.supplierName)}</b></span><strong>${this.money(item.winner.total)}</strong>`:'<span><i class="fa-solid fa-triangle-exclamation"></i> Nenhum preço completo</span>'}</footer>
       </article>`).join('')}</div>`;
-      const notes=`<div class="compare-truth-note"><i class="fa-solid fa-circle-info"></i><div><b>Como o destaque é calculado</b><span>O verde marca o menor total confirmado para a quantidade completa da peça. Estoque parcial não vence. O frete fixo não é rateado por peça; ele é somado uma única vez no total “Compra pelos menores”.</span></div></div>`;
+      const notes=`<div class="compare-truth-note"><i class="fa-solid fa-circle-info"></i><div><b>Destaque e pedido de compra são independentes</b><span>O verde continua mostrando o menor preço completo. Nenhum item entra automaticamente em pedido: marque “INCLUIR NO PEDIDO” no fornecedor desejado, seja ele o mais barato ou não.</span></div></div>`;
+      const purchase=`<section id="comparePurchaseOrders" class="compare-purchase-section"></section>`;
       const extra=`<details class="compare-more"><summary>Backup da comparação</summary><div class="compare-simple-actions"><button class="btn line" onclick="Comparator.exportJSON()"><i class="fa-solid fa-file-export"></i> Exportar comparação</button><label class="btn line" for="compareImport"><i class="fa-solid fa-file-import"></i> Importar comparação</label><input id="compareImport" class="compare-file" type="file" accept="application/json" onchange="Comparator.importJSON(this)"></div></details>`;
-      box.innerHTML=actions+summary+supplierStrip+desktop+mobile+notes+extra;
+      box.innerHTML=actions+summary+supplierStrip+desktop+mobile+notes+purchase+extra;
+      this.renderPurchaseOrders(result);
     },
+    renderPurchaseOrders(result){
+      const root=this.$('comparePurchaseOrders');if(!root)return;
+      result=result||this.computeResult();
+      const cards=this.state.suppliers.map((supplier,index)=>{
+        const data=this.purchaseOrderData(supplier.id);
+        const winnersHere=result.winners.filter(w=>w.supplierId===supplier.id).length;
+        const lines=data.lines.length?`<div class="purchase-order-lines">${data.lines.map((line,i)=>`<div class="purchase-order-line"><span>${i+1}</span><section><b>${this.esc(line.description)}</b><small>${this.esc(line.brand||'SEM MARCA')}${line.code?` · Cód. ${this.esc(line.code)}`:''}</small><small>Qtd. ${this.esc(line.offeredQty)} · ${this.money(line.quotedUnit)} cada${line.extraTotal>0?` · + ${this.money(line.extraTotal)} frete/ST`:''}</small></section><strong>${this.money(line.total)}</strong><button type="button" title="Retirar do pedido" onclick="Comparator.togglePurchaseSelection('${this.attr(supplier.id)}','${this.attr(line.requestId)}','${this.attr(line.source?.id||'')}',false)"><i class="fa-solid fa-xmark"></i></button></div>`).join('')}</div>`:'<div class="purchase-order-empty"><i class="fa-solid fa-hand-pointer"></i><b>Nenhum item selecionado</b><span>Marque “INCLUIR NO PEDIDO” nos preços deste fornecedor.</span></div>';
+        return `<article class="purchase-order-card ${data.lines.length?'has-items':''}">
+          <header><span>${index+1}</span><section><small>ORDEM DE COMPRA</small><b>${this.esc(supplier.name)}</b></section><strong>${data.lines.length} item(ns)</strong></header>
+          <div class="purchase-order-tools">
+            <button class="btn line small" onclick="Comparator.selectWinningOffersForSupplier('${this.attr(supplier.id)}')" ${!winnersHere?'disabled':''}><i class="fa-solid fa-trophy"></i> Marcar destacados (${winnersHere})</button>
+            <button class="btn line small" onclick="Comparator.clearSupplierPurchaseOrder('${this.attr(supplier.id)}')" ${!data.lines.length?'disabled':''}><i class="fa-solid fa-eraser"></i> Limpar seleção</button>
+          </div>
+          ${lines}
+          <div class="purchase-order-totals"><div><span>Itens selecionados</span><b>${this.money(data.itemsTotal)}</b></div>${data.freight>0?`<div><span>Frete fixo cadastrado</span><b>${this.money(data.freight)}</b></div>`:''}<div class="grand"><span>Total do pedido</span><b>${this.money(data.total)}</b></div></div>
+          <div class="purchase-order-actions"><button class="btn ok" onclick="Comparator.generatePurchaseOrderPDF('${this.attr(supplier.id)}')" ${!data.lines.length?'disabled':''}><i class="fa-solid fa-file-pdf"></i> Gerar pedido PDF</button><button class="btn line" onclick="Comparator.sharePurchaseOrderPDF('${this.attr(supplier.id)}')" ${!data.lines.length?'disabled':''}><i class="fa-solid fa-share-nodes"></i> Compartilhar pedido</button></div>
+        </article>`;
+      }).join('');
+      root.innerHTML=`<div class="purchase-order-heading"><span class="compare-step">4</span><div><h3>Pedidos de compra por fornecedor</h3><p>Você decide item por item. O destaque verde não seleciona nada automaticamente.</p></div></div><div class="purchase-order-grid">${cards}</div>`;
+    },
+    purchaseOrderPdfName(supplier){
+      const supplierName=String(supplier?.name||'fornecedor').replace(/[^a-zA-Z0-9À-ÿ]+/g,'_').replace(/^_+|_+$/g,'').slice(0,45)||'fornecedor';
+      const vehicle=String(this.state.vehicle||'veiculo').replace(/[^a-zA-Z0-9À-ÿ]+/g,'_').replace(/^_+|_+$/g,'').slice(0,45)||'veiculo';
+      return `Pedido_Compra_${supplierName}_${vehicle}.pdf`;
+    },
+    createPurchaseOrderPDF(supplierId){
+      const jsPDFClass=window.jspdf?.jsPDF;
+      if(!jsPDFClass || !jsPDFClass.API?.autoTable)throw new Error('Biblioteca de PDF não carregada.');
+      const data=this.purchaseOrderData(supplierId);
+      if(!data.supplier)throw new Error('Fornecedor não encontrado.');
+      if(!data.lines.length)throw new Error('Selecione pelo menos um item para este fornecedor.');
+      const app=this.app();
+      const field=id=>String(app?.$?.(id)?.value||this.$(id)?.value||'').trim();
+      const office=field('oficinaNome');
+      const cnpj=field('oficinaCnpj');
+      const phone=field('oficinaTelefone');
+      const doc=new jsPDFClass('p','mm','a4');
+      const navy=[17,24,39],green=[22,101,52],gray=[100,116,139];
+      doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(...navy);doc.text('PEDIDO DE COMPRA',14,16);
+      doc.setFontSize(11);doc.setTextColor(...green);doc.text(String(data.supplier.name||'FORNECEDOR').toUpperCase(),14,23);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...gray);
+      let y=29;
+      if(office){doc.text(`Solicitante: ${office}${cnpj?` · CNPJ ${cnpj}`:''}`,14,y);y+=5;}
+      if(phone){doc.text(`Contato: ${phone}`,14,y);y+=5;}
+      doc.text(`Veículo / aplicação: ${this.state.vehicle||'Não informado'}`,14,y);y+=5;
+      doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`,14,y);y+=6;
+      const body=data.lines.map((line,index)=>[
+        String(index+1),
+        line.code||'—',
+        line.description,
+        line.brand||'SEM MARCA',
+        String(line.offeredQty),
+        this.money(line.quotedUnit),
+        line.extraTotal>0?this.money(line.extraTotal):'—',
+        this.money(line.total)
+      ]);
+      doc.autoTable({
+        startY:y,
+        head:[['ITEM','CÓDIGO','DESCRIÇÃO','MARCA','QTD.','VALOR UN.','FRETE/ST LINHA','TOTAL']],
+        body,theme:'grid',
+        headStyles:{fillColor:navy,textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',valign:'middle'},
+        styles:{font:'helvetica',fontSize:7,cellPadding:2,lineColor:[203,213,225],lineWidth:.2,overflow:'linebreak',valign:'middle'},
+        columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:19},2:{cellWidth:48},3:{cellWidth:25},4:{cellWidth:12,halign:'center'},5:{cellWidth:22,halign:'right'},6:{cellWidth:24,halign:'right'},7:{cellWidth:24,halign:'right'}},
+        margin:{left:13,right:13,top:12,bottom:24},rowPageBreak:'avoid'
+      });
+      y=doc.lastAutoTable.finalY+7;
+      if(y>252){doc.addPage();y=18;}
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...navy);
+      doc.text('Subtotal dos itens:',132,y);doc.text(this.money(data.itemsTotal),196,y,{align:'right'});y+=6;
+      if(data.freight>0){doc.text('Frete fixo do fornecedor:',132,y);doc.text(this.money(data.freight),196,y,{align:'right'});y+=6;}
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...green);
+      doc.text('TOTAL DO PEDIDO:',132,y);doc.text(this.money(data.total),196,y,{align:'right'});
+      y+=10;doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...gray);
+      doc.text('Itens escolhidos manualmente pelo usuário a partir dos preços conferidos na comparação.',14,y);
+      const pages=doc.internal.getNumberOfPages();
+      for(let i=1;i<=pages;i++){
+        doc.setPage(i);doc.setFontSize(7);doc.setTextColor(...gray);
+        doc.text(`Powered by thIAguinho Soluções Digitais — Página ${i}/${pages}`,105,288,{align:'center'});
+      }
+      return {doc,blob:doc.output('blob'),fileName:this.purchaseOrderPdfName(data.supplier),data};
+    },
+    generatePurchaseOrderPDF(supplierId){
+      try{const pdf=this.createPurchaseOrderPDF(supplierId);pdf.doc.save(pdf.fileName);this.toast(`Pedido de compra de ${pdf.data.supplier.name} gerado.`);}catch(error){this.toast(error.message||'Não foi possível gerar o pedido de compra.');}
+    },
+    async sharePurchaseOrderPDF(supplierId){
+      try{
+        const pdf=this.createPurchaseOrderPDF(supplierId);
+        const file=new File([pdf.blob],pdf.fileName,{type:'application/pdf'});
+        if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({title:`Pedido de compra — ${pdf.data.supplier.name}`,text:`Pedido de compra para ${pdf.data.supplier.name}`,files:[file]});
+        else{pdf.doc.save(pdf.fileName);this.toast('O navegador não compartilha arquivos diretamente. O pedido foi baixado para você anexar.');}
+      }catch(error){if(error?.name!=='AbortError')this.toast(error.message||'Não foi possível compartilhar o pedido de compra.');}
+    },
+
     comparisonPdfName(){
       const vehicle=(this.state.vehicle||'comparacao').replace(/[^a-zA-Z0-9À-ÿ]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60)||'comparacao';
       return `Comparacao_Precos_${vehicle}.pdf`;
@@ -1236,9 +1464,10 @@ Regras: não invente; uma linha por produto; preserve marca/código; qty é some
       reader.onload=()=>{try{
         const data=JSON.parse(reader.result);
         this._loadedVersion=this.num(data?.version)||0;
-        this.state=Object.assign(this.defaultState(),data||{},{version:7});
+        this.state=Object.assign(this.defaultState(),data||{},{version:8});
         if(!Array.isArray(this.state.requested))this.state.requested=[];
         if(!Array.isArray(this.state.suppliers))this.state.suppliers=[];
+        if(!this.state.purchaseSelections || typeof this.state.purchaseSelections!=='object' || Array.isArray(this.state.purchaseSelections))this.state.purchaseSelections={};
         this.state.suppliers.forEach(s=>{
           s.draftOffers=Array.isArray(s.draftOffers)?s.draftOffers.map(o=>this.normalizeDraft(o)):[];
           s.offers=Array.isArray(s.offers)?s.offers.map(o=>this.normalizeDraft(o)):[];
